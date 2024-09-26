@@ -1,0 +1,9 @@
+# For documentation on how to configure this file,
+# see https://diesel.rs/guides/configuring-diesel-cli
+
+[print_schema]
+file = "internal/infra/database/schemas/mod.rs"
+custom_type_derives = ["diesel::query_builder::QueryId", "Clone"]
+
+[migrations_directory]
+dir = "/mnt/B8741035740FF4C2/RustProjects/rust-actix-boilerplaite/internal/infra/database/migrations"

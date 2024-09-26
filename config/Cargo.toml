@@ -1,0 +1,13 @@
+[package]
+name = "config"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "config"
+path = "config.rs"
+
+[dependencies]
+dependencies = { path = "../dependencies" }
+chrono = { version = "0.4.38" }
+diesel = { version = "2.2.0", features = ["postgres"] }
