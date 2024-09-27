@@ -1,14 +1,28 @@
 use chrono::{ NaiveDateTime, Utc };
 use diesel::{
     prelude::{ Insertable, Queryable },
+    query_dsl::methods::FilterDsl,
     r2d2::{ ConnectionManager, Pool, PooledConnection },
+    ExpressionMethods,
     PgConnection,
     RunQueryDsl,
     Selectable,
     SelectableHelper,
 };
 
-use crate::infra::{ database::schemas::users::users, domain::user::UserDTO };
+use crate::infra::domain::user::UserDTO;
+
+diesel::table! {
+    users (id) {
+        id -> Int4,
+        name -> Text,
+        email -> Text,
+        password -> Text,
+        created_date -> Timestamp,
+        updated_date -> Timestamp,
+        deleted_date -> Nullable<Timestamp>,
+    }
+}
 
 #[derive(Selectable, Queryable, Debug)]
 #[diesel(table_name = users)]
@@ -59,7 +73,7 @@ impl UserRepository {
     }
 
     pub fn create_user(&mut self, user_dto: &UserDTO) -> UserDTO {
-        use super::schemas::users::users::dsl::*;
+        use users::dsl::users;
         let user_model = UserInsertable::new(
             user_dto.name.clone(),
             user_dto.email.clone(),
@@ -75,8 +89,12 @@ impl UserRepository {
     }
 
     pub fn find_all(&mut self) -> Result<Vec<User>, diesel::result::Error> {
-        use super::schemas::users::users::dsl::*;
+        use users::dsl::users;
         let users_list = users.load::<User>(&mut self.get_connection())?;
         return Ok(users_list);
+    }
+
+    pub fn find_by_id(&mut self, user_id: i32) {
+        use users::dsl::users;
     }
 }

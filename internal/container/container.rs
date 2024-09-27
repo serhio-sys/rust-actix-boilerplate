@@ -19,11 +19,11 @@ pub struct Container {
 
 #[derive(Clone)]
 struct Services {
-    us_service: Arc<Mutex<UserService>>,
+    user_service: Arc<Mutex<UserService>>,
 }
 #[derive(Clone)]
 pub struct Controllers {
-    pub us_controller: UserController,
+    pub user_controller: UserController,
 }
 
 pub fn new() -> Container {
@@ -32,12 +32,12 @@ pub fn new() -> Container {
 
     migrate(&mut pool.get().unwrap(), &CONFIGURATION.migration_location);
 
-    let user_repo = UserRepository { pool: pool };
+    let user_repository = UserRepository { pool: pool };
     let services: Arc<Services> = Arc::new(Services {
-        us_service: UserService::new(user_repo),
+        user_service: UserService::new(user_repository),
     });
     let controllers: Controllers = Controllers {
-        us_controller: UserController::new(services.us_service.clone()),
+        user_controller: UserController::new(services.user_service.clone()),
     };
     let container = Container { services: services, controllers: controllers };
     return container;

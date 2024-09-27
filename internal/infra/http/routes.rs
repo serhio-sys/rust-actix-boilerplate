@@ -7,7 +7,7 @@ use crate::container::container::Container;
 use super::controllers::user_controller::UserController;
 
 pub fn init_routes(cfg: &mut web::ServiceConfig, container: Arc<Container>) {
-    init_user_routes(cfg, container.controllers.us_controller.clone());
+    init_user_routes(cfg, container.controllers.user_controller.clone());
 }
 
 fn init_user_routes(cfg: &mut web::ServiceConfig, us_controller: UserController) {
