@@ -15,7 +15,7 @@ pub struct UserDTO {
 }
 
 #[derive(Clone, PartialEq, Serialize)]
-pub struct RegisteredUserDTO {
+pub struct AuthenticatedUserDTO {
     pub user: UserDTO,
     pub token: String,
 }

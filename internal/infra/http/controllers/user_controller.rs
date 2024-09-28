@@ -14,7 +14,7 @@ impl UserController {
         return UserController { user_service };
     }
 
-    fn get_users(&self) -> impl Responder {
+    async fn get_users(&self) -> impl Responder {
         match self.user_service.lock().unwrap().get_all_users() {
             Ok(users) => {
                 let response = BasedListResponse {
@@ -30,7 +30,7 @@ impl UserController {
         }
     }
 
-    fn get_user_by_id(&self, user_id: i32) -> impl Responder {
+    async fn get_user_by_id(&self, user_id: i32) -> impl Responder {
         match self.user_service.lock().unwrap().get_user_by_id(user_id) {
             Ok(user) => {
                 return HttpResponse::Ok().json(user);
@@ -44,12 +44,12 @@ impl UserController {
 
 // HANDLERS USER ROUTE
 pub async fn get_users(user_controller: web::Data<UserController>) -> impl Responder {
-    return user_controller.get_users();
+    return user_controller.get_users().await;
 }
 
 pub async fn get_user_by_id(
     user_controller: web::Data<UserController>,
-    user_id: i32
+    user_id: web::Path<i32>
 ) -> impl Responder {
-    return user_controller.get_user_by_id(user_id);
+    return user_controller.get_user_by_id(user_id.into_inner()).await;
 }

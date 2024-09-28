@@ -3,7 +3,7 @@ use std::{ sync::{ Arc, Mutex }, time::{ Duration, SystemTime, UNIX_EPOCH } };
 
 use argon2::{ Argon2, PasswordHash, PasswordVerifier };
 use config::CONFIGURATION;
-use dependencies::log::error;
+use dependencies::log::{ error, warn };
 use jsonwebtoken::{ EncodingKey, Header };
 use serde::{ Deserialize, Serialize };
 use thiserror::Error;
@@ -14,15 +14,15 @@ use crate::infra::{
         session_repository::{ Session, SessionRepository },
         user_repository::UserRepository,
     },
-    domain::{ session::SessionDTO, user::{ RegisteredUserDTO, UserDTO } },
+    domain::{ session::SessionDTO, user::{ AuthenticatedUserDTO, UserDTO } },
     http::requests::user_request::{ AuthRequest, UserRequest },
 };
 
-#[derive(Serialize, Deserialize)]
-struct Claims {
-    user_id: i32,
-    uuid: Uuid,
-    exp: usize,
+#[derive(Serialize, Clone, Deserialize)]
+pub struct Claims {
+    pub user_id: i32,
+    pub uuid: Uuid,
+    pub exp: usize,
 }
 
 pub struct AuthService {
@@ -51,7 +51,10 @@ impl AuthService {
         );
     }
 
-    pub fn register(&mut self, user: UserRequest) -> Result<RegisteredUserDTO, AuthServiceError> {
+    pub fn register(
+        &mut self,
+        user: UserRequest
+    ) -> Result<AuthenticatedUserDTO, AuthServiceError> {
         if let Ok(_) = self.user_repository.lock().unwrap().find_by_email(&user.email) {
             return Err(
                 AuthServiceError::ServiceError(
@@ -70,17 +73,21 @@ impl AuthService {
         }
         match self.generate_jwt(user_dto.id.unwrap()) {
             Ok(token) => {
-                return Ok(RegisteredUserDTO { user: user_dto, token: token });
+                return Ok(AuthenticatedUserDTO { user: user_dto, token: token });
             }
             Err(e) => Err(e),
         }
     }
 
-    pub fn login(&mut self, request_user: AuthRequest) -> Result<UserDTO, AuthServiceError> {
+    pub fn login(
+        &mut self,
+        request_user: AuthRequest
+    ) -> Result<AuthenticatedUserDTO, AuthServiceError> {
+        let user_dto: UserDTO;
         match self.user_repository.lock().unwrap().find_by_email(&request_user.email) {
             Ok(user) => {
                 if verify_password(&user.password, &request_user.password) {
-                    return Ok(UserDTO::model_to_dto(user));
+                    user_dto = UserDTO::model_to_dto(user);
                 } else {
                     return Err(AuthServiceError::ServiceError(Box::from("Invalid password")));
                 }
@@ -93,10 +100,51 @@ impl AuthService {
                 );
             }
         }
+        match self.generate_jwt(user_dto.id.unwrap()) {
+            Ok(token) => {
+                return Ok(AuthenticatedUserDTO {
+                    user: user_dto,
+                    token: token.to_string(),
+                });
+            }
+            Err(e) => {
+                return Err(e);
+            }
+        }
+    }
+
+    pub fn logout(&mut self, session: SessionDTO) -> Result<(), AuthServiceError> {
+        match self.session_repository.lock().unwrap().delete(session) {
+            Ok(_) => {
+                return Ok(());
+            }
+            Err(e) => {
+                return Err(AuthServiceError::DieselError(e));
+            }
+        }
+    }
+
+    pub fn check(&mut self, session: Claims) -> bool {
+        match
+            self.session_repository
+                .lock()
+                .unwrap()
+                .exists(SessionDTO { user_id: session.user_id, uuid: session.uuid })
+        {
+            Ok(exists) => {
+                if exists {
+                    return true;
+                }
+            }
+            Err(e) => {
+                warn!("{}", e.to_string());
+            }
+        }
+        return false;
     }
 
     fn generate_jwt(&mut self, user_id: i32) -> Result<String, AuthServiceError> {
-        let session = SessionDTO { user_id: user_id, uuid: Uuid::new_v4() };
+        let session = SessionDTO { user_id, uuid: Uuid::new_v4() };
         let saved_session: Session;
         match self.session_repository.lock().unwrap().save(session) {
             Ok(unwrapped_session) => {

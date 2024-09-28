@@ -17,14 +17,14 @@ use crate::{
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Container {
-    services: Arc<Services>,
+    pub services: Arc<Services>,
     pub controllers: Controllers,
 }
 
 #[derive(Clone)]
-struct Services {
-    user_service: Arc<Mutex<UserService>>,
-    auth_service: Arc<Mutex<AuthService>>,
+pub struct Services {
+    pub user_service: Arc<Mutex<UserService>>,
+    pub auth_service: Arc<Mutex<AuthService>>,
 }
 #[derive(Clone)]
 pub struct Controllers {
