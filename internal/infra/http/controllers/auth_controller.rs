@@ -1,13 +1,13 @@
 use std::sync::{ Arc, Mutex };
 
-use actix_web::{ web, HttpResponse, Responder };
+use actix_web::{ web, HttpMessage, HttpRequest, HttpResponse, Responder };
 
 use crate::{
     infra::{
         domain::session::SessionDTO,
         http::requests::user_request::{ AuthRequest, UserRequest },
     },
-    services::auth_service::AuthService,
+    services::auth_service::{ AuthService, Claims },
 };
 
 #[derive(Clone)]
@@ -42,9 +42,31 @@ impl AuthController {
         }
     }
 
-    async fn logout(&self, session: SessionDTO) {
-        todo!();
+    async fn logout(&self, request: HttpRequest) -> impl Responder {
+        if let Some(claims) = request.extensions_mut().get::<Claims>() {
+            let session = SessionDTO {
+                user_id: claims.user_id,
+                uuid: claims.uuid.clone(),
+            };
+            match self.auth_service.lock().unwrap().logout(session) {
+                Ok(_) => {
+                    return HttpResponse::Ok().finish().map_into_boxed_body();
+                }
+                Err(e) => {
+                    return HttpResponse::BadRequest().json(e.to_string());
+                }
+            }
+        } else {
+            return HttpResponse::Unauthorized().finish();
+        }
     }
+}
+
+pub async fn logout(
+    auth_controller: web::Data<AuthController>,
+    request: HttpRequest
+) -> impl Responder {
+    return auth_controller.logout(request).await;
 }
 
 pub async fn register(
