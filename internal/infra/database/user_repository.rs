@@ -1,3 +1,5 @@
+use std::sync::{ Arc, Mutex };
+
 use chrono::{ NaiveDateTime, Utc };
 use diesel::{
     prelude::{ Insertable, Queryable },
@@ -10,7 +12,7 @@ use diesel::{
     SelectableHelper,
 };
 
-use crate::infra::domain::user::UserDTO;
+use crate::infra::http::requests::user_request::UserRequest;
 
 diesel::table! {
     users (id) {
@@ -64,15 +66,19 @@ impl UserInsertable {
 
 #[derive(Clone)]
 pub struct UserRepository {
-    pub pool: Pool<ConnectionManager<PgConnection>>,
+    pub pool: Arc<Pool<ConnectionManager<PgConnection>>>,
 }
 
 impl UserRepository {
+    pub fn new(pool: Arc<Pool<ConnectionManager<PgConnection>>>) -> Arc<Mutex<UserRepository>> {
+        return Arc::new(Mutex::new(UserRepository { pool }));
+    }
+
     pub fn get_connection(&self) -> PooledConnection<ConnectionManager<PgConnection>> {
         self.pool.get().expect("Failed to get a connection")
     }
 
-    pub fn create_user(&mut self, user_dto: &UserDTO) -> UserDTO {
+    pub fn create_user(&mut self, user_dto: &UserRequest) -> Result<User, diesel::result::Error> {
         use users::dsl::users;
         let user_model = UserInsertable::new(
             user_dto.name.clone(),
@@ -83,9 +89,8 @@ impl UserRepository {
             ::insert_into(users)
             .values(&user_model)
             .returning(User::as_returning())
-            .get_result(&mut self.get_connection())
-            .expect("Error in saving user");
-        return UserDTO::model_to_dto(new_user);
+            .get_result(&mut self.get_connection())?;
+        return Ok(new_user);
     }
 
     pub fn find_all(&mut self) -> Result<Vec<User>, diesel::result::Error> {
@@ -94,7 +99,19 @@ impl UserRepository {
         return Ok(users_list);
     }
 
-    pub fn find_by_id(&mut self, user_id: i32) {
-        use users::dsl::users;
+    pub fn find_by_id(&mut self, user_id: i32) -> Result<User, diesel::result::Error> {
+        use self::users::dsl::*;
+        return users
+            .filter(id.eq(user_id))
+            .first::<User>(&mut self.get_connection())
+            .map_err(Into::into);
+    }
+
+    pub fn find_by_email(&mut self, user_email: &str) -> Result<User, diesel::result::Error> {
+        use self::users::dsl::*;
+        return users
+            .filter(email.eq(user_email))
+            .first::<User>(&mut self.get_connection())
+            .map_err(Into::into);
     }
 }

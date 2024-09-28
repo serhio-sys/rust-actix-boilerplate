@@ -13,6 +13,8 @@ pub struct Configuration {
     pub database_host: String,
     pub migration_location: String,
     pub migration_version: String,
+    pub jwt_ttl: u64,
+    pub jwt_secret: String,
 }
 
 fn get_configuration() -> Configuration {
@@ -26,6 +28,8 @@ fn get_configuration() -> Configuration {
         database_password: get_var("DATABASE_PASSWORD"),
         migration_location: get_var("MIGRATION_LOCATION"),
         migration_version: get_var_or_default("MIGRATE_TO", "latest"),
+        jwt_ttl: 72 * 3600,
+        jwt_secret: get_var_or_default("JWT_SECRET", "1234567890"),
     };
 }
 

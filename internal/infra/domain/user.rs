@@ -14,6 +14,12 @@ pub struct UserDTO {
     pub deleted_date: Option<NaiveDateTime>,
 }
 
+#[derive(Clone, PartialEq, Serialize)]
+pub struct RegisteredUserDTO {
+    pub user: UserDTO,
+    pub token: String,
+}
+
 impl UserDTO {
     pub(crate) fn model_to_dto(user: User) -> UserDTO {
         return UserDTO {
