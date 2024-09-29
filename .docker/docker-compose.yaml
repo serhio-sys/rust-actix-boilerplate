@@ -1,0 +1,32 @@
+services:
+  app:
+    container_name: app_service
+    build:
+      context: ../
+      dockerfile: .docker/Dockerfile
+    env_file: env/.app.env
+    ports:
+      - '8080:8080'
+    restart: unless-stopped
+    depends_on:
+      - appdb
+    networks:
+      - default
+
+  appdb:
+    image: postgres:16-alpine
+    container_name: app_db
+    env_file: env/.db.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    networks:
+      - default
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    driver: bridge
