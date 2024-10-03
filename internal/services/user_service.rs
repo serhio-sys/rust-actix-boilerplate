@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use dependencies::log::error;
+use config::log::error;
 use thiserror::Error;
 
 use crate::infra::{ database::user_repository::UserRepository, domain::user::UserDTO };

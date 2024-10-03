@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use config::CONFIGURATION;
-use dependencies::log::info;
+use config::log::info;
 use diesel::{ r2d2::{ ConnectionManager, Pool }, PgConnection };
 use diesel_migrations::MigrationHarness;
 

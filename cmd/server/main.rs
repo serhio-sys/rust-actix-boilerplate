@@ -1,6 +1,6 @@
 use core::panic;
 
-use dependencies::init_logger;
+use config::logger::init_logger;
 use internal::{ container::container::new, infra::{ database::migration::migrate, http::server } };
 
 #[actix_web::main]

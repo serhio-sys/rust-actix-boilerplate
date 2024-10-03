@@ -2,7 +2,8 @@ use core::error;
 use std::{ sync::Arc, time::{ Duration, SystemTime, UNIX_EPOCH } };
 
 use config::CONFIGURATION;
-use dependencies::{ log::{ error, warn }, pwhash::bcrypt::{ self, BcryptSetup } };
+use config::log::warn;
+use pwhash::bcrypt::{ self, BcryptSetup };
 use jsonwebtoken::{ EncodingKey, Header };
 use serde::{ Deserialize, Serialize };
 use thiserror::Error;
@@ -32,7 +33,7 @@ pub struct AuthService {
 #[derive(Error, Debug)]
 pub enum AuthServiceError {
     #[error("Database error: {0}")] DieselError(diesel::result::Error),
-    #[error("Hash error: {0}")] ArgonError(dependencies::pwhash::error::Error),
+    #[error("Hash error: {0}")] ArgonError(pwhash::error::Error),
     #[error("JWT error: {0}")] JWTError(jsonwebtoken::errors::Error),
     #[error("Service error: {0}")] ServiceError(Box<dyn error::Error>),
 }
@@ -182,7 +183,7 @@ fn verify_password(hash: &str, password: &str) -> bool {
     return bcrypt::verify(password, hash);
 }
 
-fn hash_user_password(password: &str) -> Result<String, dependencies::pwhash::error::Error> {
+fn hash_user_password(password: &str) -> Result<String, pwhash::error::Error> {
     return bcrypt::hash_with(
         BcryptSetup {
             variant: Some(bcrypt::BcryptVariant::V2b),

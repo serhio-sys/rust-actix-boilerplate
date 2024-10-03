@@ -8,6 +8,6 @@ name = "config"
 path = "config.rs"
 
 [dependencies]
-dependencies = { path = "../dependencies" }
-chrono = { version = "0.4.38" }
-diesel = { version = "2.2.0", features = ["postgres"] }
+lazy_static = "1.5.0"
+log = "0.4"
+dotenvy = "0.15"

@@ -1,8 +1,3 @@
-pub use lazy_static;
-pub use log;
-pub use dotenvy;
-pub use pwhash;
-
 static LOGGER: Logger = Logger;
 
 struct Logger;

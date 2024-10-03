@@ -1,4 +1,8 @@
-use dependencies::{ dotenvy::{ dotenv, var }, lazy_static::lazy_static, log };
+use dotenvy::{ dotenv, var };
+use lazy_static::lazy_static;
+
+pub mod logger;
+pub use log;
 
 lazy_static! {
     pub static ref CONFIGURATION: Configuration = {

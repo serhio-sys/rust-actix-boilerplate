@@ -8,8 +8,6 @@ name = "server"
 path = "cmd/server/main.rs"
 
 [dependencies]
-actix-web = "4"
 config = { path = "config" }
 internal = { path = "internal" }
-dependencies = { path = "dependencies" }
-
+actix-web = "4"
