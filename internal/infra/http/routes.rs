@@ -14,7 +14,7 @@ use crate::container::container::Container;
 use super::{
     controllers::{
         auth_controller::{ login, logout, register, AuthController },
-        user_controller::{ get_user_by_id, get_users, UserController },
+        user_controller::{ delete, find_all, find_me, UserController },
     },
     middlewares::auth_middleware::auth_middleware,
 };
@@ -51,9 +51,10 @@ fn init_user_routes(
     container: Arc<Container>
 ) {
     cfg.app_data(us_controller.clone()).service(
-        protected_route(container, "/users")
-            .route("{id}", web::get().to(get_user_by_id))
-            .route("", web::get().to(get_users))
+        protected_route(container, "/user")
+            .route("/all", web::get().to(find_all))
+            .route("", web::get().to(find_me))
+            .route("", web::delete().to(delete))
     );
 }
 

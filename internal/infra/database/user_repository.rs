@@ -94,8 +94,10 @@ impl UserRepository {
     }
 
     pub fn find_all(&self) -> Result<Vec<User>, diesel::result::Error> {
-        use users::dsl::users;
-        let users_list = users.load::<User>(&mut self.get_connection())?;
+        use self::users::dsl::{ users, deleted_date };
+        let users_list = users
+            .filter(deleted_date.is_null())
+            .load::<User>(&mut self.get_connection())?;
         return Ok(users_list);
     }
 
@@ -103,6 +105,7 @@ impl UserRepository {
         use self::users::dsl::*;
         return users
             .filter(id.eq(user_id))
+            .filter(deleted_date.is_null())
             .first::<User>(&mut self.get_connection())
             .map_err(Into::into);
     }
@@ -111,7 +114,17 @@ impl UserRepository {
         use self::users::dsl::*;
         return users
             .filter(email.eq(user_email))
+            .filter(deleted_date.is_null())
             .first::<User>(&mut self.get_connection())
             .map_err(Into::into);
+    }
+
+    pub fn delete(&self, user_id: i32) -> Result<usize, diesel::result::Error> {
+        use self::users::dsl::*;
+        return diesel
+            ::update(users)
+            .filter(id.eq(user_id))
+            .set(deleted_date.eq(Utc::now().naive_local()))
+            .execute(&mut self.get_connection());
     }
 }

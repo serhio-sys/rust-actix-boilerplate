@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use actix_web::{ web, HttpResponse, Responder };
+use actix_web::{ web, HttpMessage, HttpRequest, HttpResponse, Responder };
 
-use crate::{ infra::http::resources::BasedListResponse, services::user_service::UserService };
+use crate::{
+    infra::{ domain::user::UserDTO, http::resources::BasedListResponse },
+    services::user_service::UserService,
+};
 
 #[derive(Clone)]
 pub struct UserController {
@@ -14,8 +17,8 @@ impl UserController {
         return UserController { user_service };
     }
 
-    async fn get_users(&self) -> impl Responder {
-        match self.user_service.get_all_users() {
+    async fn find_all(&self) -> impl Responder {
+        match self.user_service.find_all() {
             Ok(users) => {
                 let response = BasedListResponse {
                     data: users,
@@ -30,26 +33,43 @@ impl UserController {
         }
     }
 
-    async fn get_user_by_id(&self, user_id: i32) -> impl Responder {
-        match self.user_service.get_user_by_id(user_id) {
-            Ok(user) => {
-                return HttpResponse::Ok().json(user);
-            }
-            Err(e) => {
-                return HttpResponse::BadRequest().json(e.to_string());
+    async fn find_me(&self, request: HttpRequest) -> impl Responder {
+        if let Some(user) = request.extensions_mut().get::<UserDTO>() {
+            return HttpResponse::Ok().json(user);
+        }
+        return HttpResponse::BadRequest().json("Something went wrong");
+    }
+
+    async fn delete(&self, request: HttpRequest) -> impl Responder {
+        if let Some(user) = request.extensions_mut().get::<UserDTO>() {
+            match self.user_service.delete(user.id.unwrap()) {
+                Ok(_) => {
+                    return HttpResponse::Ok().finish().map_into_boxed_body();
+                }
+                Err(e) => {
+                    return HttpResponse::BadRequest().json(e.to_string());
+                }
             }
         }
+        return HttpResponse::Forbidden().json("Not authenticated");
     }
 }
 
 // HANDLERS USER ROUTE
-pub async fn get_users(user_controller: web::Data<UserController>) -> impl Responder {
-    return user_controller.get_users().await;
+pub async fn find_all(user_controller: web::Data<UserController>) -> impl Responder {
+    return user_controller.find_all().await;
 }
 
-pub async fn get_user_by_id(
+pub async fn find_me(
     user_controller: web::Data<UserController>,
-    user_id: web::Path<i32>
+    request: HttpRequest
 ) -> impl Responder {
-    return user_controller.get_user_by_id(user_id.into_inner()).await;
+    return user_controller.find_me(request).await;
+}
+
+pub async fn delete(
+    user_controller: web::Data<UserController>,
+    request: HttpRequest
+) -> impl Responder {
+    return user_controller.delete(request).await;
 }

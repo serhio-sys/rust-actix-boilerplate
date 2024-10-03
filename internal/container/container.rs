@@ -40,7 +40,10 @@ pub fn new() -> Result<Container, Box<dyn std::error::Error + Send + Sync + 'sta
     let user_repository = UserRepository::new(Arc::clone(&pool));
     let session_repository = SessionRepository::new(Arc::clone(&pool));
     let services: Arc<Services> = Arc::new(Services {
-        user_service: UserService::new(Arc::clone(&user_repository)),
+        user_service: UserService::new(
+            Arc::clone(&user_repository),
+            Arc::clone(&session_repository)
+        ),
         auth_service: AuthService::new(
             Arc::clone(&user_repository),
             Arc::clone(&session_repository)

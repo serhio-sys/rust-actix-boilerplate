@@ -70,4 +70,12 @@ impl SessionRepository {
             .execute(&mut self.get_connection());
         return result;
     }
+
+    pub fn delete_by_user_id(&self, id: i32) -> Result<usize, diesel::result::Error> {
+        use self::sessions::dsl::*;
+        let result = diesel
+            ::delete(sessions.filter(user_id.eq(id)))
+            .execute(&mut self.get_connection());
+        return result;
+    }
 }

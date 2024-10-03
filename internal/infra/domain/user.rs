@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use serde::Serialize;
 
-use crate::infra::database::user_repository::User;
+use crate::infra::{ database::user_repository::User, http::middlewares::Userable };
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct UserDTO {
@@ -37,5 +37,11 @@ impl UserDTO {
             users_dto.push(UserDTO::model_to_dto(user));
         }
         return users_dto;
+    }
+}
+
+impl Userable for UserDTO {
+    fn get_user_id(&self) -> i32 {
+        return self.id.unwrap();
     }
 }
