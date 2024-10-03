@@ -1,4 +1,4 @@
-use std::sync::{ Arc, Mutex };
+use std::sync::Arc;
 
 use actix_web::{ web, HttpMessage, HttpRequest, HttpResponse, Responder };
 
@@ -12,16 +12,16 @@ use crate::{
 
 #[derive(Clone)]
 pub struct AuthController {
-    auth_service: Arc<Mutex<AuthService>>,
+    auth_service: Arc<AuthService>,
 }
 
 impl AuthController {
-    pub fn new(auth_service: Arc<Mutex<AuthService>>) -> AuthController {
+    pub fn new(auth_service: Arc<AuthService>) -> AuthController {
         return AuthController { auth_service };
     }
 
     async fn register(&self, user: web::Json<UserRequest>) -> impl Responder {
-        match self.auth_service.lock().unwrap().register(user.into_inner()) {
+        match self.auth_service.register(user.into_inner()) {
             Ok(user) => {
                 return HttpResponse::Created().json(user);
             }
@@ -32,7 +32,7 @@ impl AuthController {
     }
 
     async fn login(&self, user_credentials: web::Json<AuthRequest>) -> impl Responder {
-        match self.auth_service.lock().unwrap().login(user_credentials.into_inner()) {
+        match self.auth_service.login(user_credentials.into_inner()) {
             Ok(user) => {
                 return HttpResponse::Ok().json(user);
             }
@@ -48,7 +48,7 @@ impl AuthController {
                 user_id: claims.user_id,
                 uuid: claims.uuid.clone(),
             };
-            match self.auth_service.lock().unwrap().logout(session) {
+            match self.auth_service.logout(session) {
                 Ok(_) => {
                     return HttpResponse::Ok().finish().map_into_boxed_body();
                 }

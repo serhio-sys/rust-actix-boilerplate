@@ -1,4 +1,4 @@
-use std::sync::{ Arc, Mutex };
+use std::sync::Arc;
 
 use actix_web::{
     body::{ BoxBody, MessageBody },
@@ -11,14 +11,11 @@ use actix_web::{
 use config::CONFIGURATION;
 use jsonwebtoken::{ decode, DecodingKey, Validation };
 
-use crate::{
-    infra::domain::user::UserDTO,
-    services::{ auth_service::{ AuthService, Claims }, user_service::UserService },
-};
+use crate::services::{ auth_service::{ AuthService, Claims }, user_service::UserService };
 
 pub async fn auth_middleware<B>(
-    user_service: Arc<Mutex<UserService>>,
-    auth_service: Arc<Mutex<AuthService>>,
+    user_service: Arc<UserService>,
+    auth_service: Arc<AuthService>,
     req: ServiceRequest,
     next: Next<B>
 ) -> Result<ServiceResponse<BoxBody>, Error>
@@ -37,30 +34,31 @@ pub async fn auth_middleware<B>(
         match token_data {
             Ok(data) => {
                 let claims = data.claims;
-                if !auth_service.lock().unwrap().check(claims.clone()) {
+                if auth_service.check(claims.clone()) {
+                    match user_service.get_user_by_id(claims.user_id) {
+                        Ok(user) => {
+                            req.extensions_mut().insert(user);
+                            req.extensions_mut().insert(claims.clone());
+                            let res = next.call(req).await?;
+                            return Ok(res.map_into_boxed_body());
+                        }
+                        Err(e) => {
+                            return Ok(
+                                req.into_response(
+                                    HttpResponse::BadRequest()
+                                        .json(e.to_string())
+                                        .map_into_boxed_body()
+                                )
+                            );
+                        }
+                    }
+                } else {
                     return Ok(
                         req.into_response(
                             HttpResponse::Unauthorized().finish().map_into_boxed_body()
                         )
                     );
                 }
-                let user_dto: UserDTO;
-                match user_service.lock().unwrap().get_user_by_id(claims.user_id) {
-                    Ok(user) => {
-                        user_dto = user;
-                    }
-                    Err(e) => {
-                        return Ok(
-                            req.into_response(
-                                HttpResponse::BadRequest().json(e.to_string()).map_into_boxed_body()
-                            )
-                        );
-                    }
-                }
-                req.extensions_mut().insert(user_dto);
-                req.extensions_mut().insert(claims.clone());
-                let res = next.call(req).await?;
-                return Ok(res.map_into_boxed_body());
             }
             Err(_) => {
                 return Ok(

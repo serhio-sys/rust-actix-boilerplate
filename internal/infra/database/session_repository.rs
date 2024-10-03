@@ -1,4 +1,4 @@
-use std::sync::{ Arc, Mutex };
+use std::sync::{ Arc, RwLock };
 
 use diesel::{
     prelude::{ Insertable, Queryable },
@@ -30,19 +30,19 @@ pub struct Session {
 
 #[derive(Clone)]
 pub struct SessionRepository {
-    pub pool: Arc<Pool<ConnectionManager<PgConnection>>>,
+    pub pool: Arc<RwLock<Pool<ConnectionManager<PgConnection>>>>,
 }
 
 impl SessionRepository {
-    pub fn new(pool: Arc<Pool<ConnectionManager<PgConnection>>>) -> Arc<Mutex<SessionRepository>> {
-        return Arc::new(Mutex::new(SessionRepository { pool }));
+    pub fn new(pool: Arc<RwLock<Pool<ConnectionManager<PgConnection>>>>) -> Arc<SessionRepository> {
+        return Arc::new(SessionRepository { pool });
     }
 
     fn get_connection(&self) -> PooledConnection<ConnectionManager<PgConnection>> {
-        self.pool.get().expect("Failed to get a connection")
+        self.pool.write().unwrap().get().expect("Failed to get a connection")
     }
 
-    pub fn save(&mut self, session: SessionDTO) -> Result<Session, diesel::result::Error> {
+    pub fn save(&self, session: SessionDTO) -> Result<Session, diesel::result::Error> {
         use self::sessions::dsl::*;
         let session_model = Session { user_id: session.user_id, uuid: session.uuid };
         let result = diesel
@@ -52,7 +52,7 @@ impl SessionRepository {
         return Ok(result);
     }
 
-    pub fn exists(&mut self, session: SessionDTO) -> Result<bool, diesel::result::Error> {
+    pub fn exists(&self, session: SessionDTO) -> Result<bool, diesel::result::Error> {
         use self::sessions::dsl::*;
         use diesel::dsl::exists;
         let exists = diesel
@@ -63,7 +63,7 @@ impl SessionRepository {
         return Ok(exists);
     }
 
-    pub fn delete(&mut self, session: SessionDTO) -> Result<usize, diesel::result::Error> {
+    pub fn delete(&self, session: SessionDTO) -> Result<usize, diesel::result::Error> {
         use self::sessions::dsl::*;
         let result = diesel
             ::delete(sessions.filter(user_id.eq(&session.user_id)).filter(uuid.eq(&session.uuid)))

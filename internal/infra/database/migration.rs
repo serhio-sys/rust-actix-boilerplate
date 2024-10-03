@@ -1,11 +1,27 @@
 use std::path::Path;
 
+use config::CONFIGURATION;
 use dependencies::log::info;
-use diesel::pg::Pg;
+use diesel::{ r2d2::{ ConnectionManager, Pool }, PgConnection };
 use diesel_migrations::MigrationHarness;
 
-pub fn migrate(conn: &mut impl MigrationHarness<Pg>, migration_path: &str) {
-    let migration_path = Path::new(migration_path);
+pub fn migrate() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+    let manager = ConnectionManager::<PgConnection>::new(
+        &format!(
+            "postgres://{}:{}@{}/{}?sslmode=disable",
+            CONFIGURATION.database_user,
+            CONFIGURATION.database_password,
+            CONFIGURATION.database_host,
+            CONFIGURATION.database_name
+        )
+    );
+    let pool = Pool::builder()
+        .max_size(5)
+        .connection_timeout(std::time::Duration::from_secs(5))
+        .build(manager)
+        .unwrap_or_else(|_| panic!("Error: Unable to establish database connection."));
+
+    let migration_path = Path::new(&CONFIGURATION.migration_location);
     let migrator = diesel_migrations::FileBasedMigrations
         ::find_migrations_directory_in_path(migration_path)
         .map_err(|err| format!("Error in creating FileBasedMigrations: {}", err))
@@ -18,11 +34,16 @@ pub fn migrate(conn: &mut impl MigrationHarness<Pg>, migration_path: &str) {
     //    println!("{}", item.name());
     //}
     //conn.revert_all_migrations(migrator.clone()).expect("Could not revert migrations");
-    if !conn.has_pending_migration(migrator.clone()).unwrap() {
+    let is_pending_migrations = !MigrationHarness::has_pending_migration(
+        &mut pool.get().unwrap(),
+        migrator.clone()
+    ).unwrap();
+    if is_pending_migrations {
         info!("Nothing to migrate");
     } else {
-        conn.run_pending_migrations(migrator).expect("Could not run migrations");
+        MigrationHarness::run_pending_migrations(&mut pool.get().unwrap(), migrator)?;
         info!("Migrated successfully to latest migration");
     }
     info!("Migrations was passed");
+    return Ok(());
 }

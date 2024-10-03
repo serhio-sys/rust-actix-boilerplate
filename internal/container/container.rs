@@ -1,14 +1,10 @@
-use std::sync::{ Arc, Mutex };
+use std::sync::{ Arc, RwLock };
 use config::CONFIGURATION;
 use diesel::{ r2d2::{ ConnectionManager, Pool }, PgConnection };
 
 use crate::{
     infra::{
-        database::{
-            migration::migrate,
-            session_repository::SessionRepository,
-            user_repository::UserRepository,
-        },
+        database::{ session_repository::SessionRepository, user_repository::UserRepository },
         http::controllers::{ auth_controller::AuthController, user_controller::UserController },
     },
     services::{ auth_service::AuthService, user_service::UserService },
@@ -23,8 +19,8 @@ pub struct Container {
 
 #[derive(Clone)]
 pub struct Services {
-    pub user_service: Arc<Mutex<UserService>>,
-    pub auth_service: Arc<Mutex<AuthService>>,
+    pub user_service: Arc<UserService>,
+    pub auth_service: Arc<AuthService>,
 }
 #[derive(Clone)]
 pub struct Controllers {
@@ -32,16 +28,14 @@ pub struct Controllers {
     pub auth_controller: AuthController,
 }
 
-pub fn new() -> Container {
+pub fn new() -> Result<Container, Box<dyn std::error::Error + Send + Sync + 'static>> {
     let manager = get_database_connection();
     let pool = Pool::builder()
         .max_size(5)
         .connection_timeout(std::time::Duration::from_secs(5))
-        .build(manager)
-        .unwrap_or_else(|_| panic!("Error: Unable to establish database connection."));
-    migrate(&mut pool.get().unwrap(), &CONFIGURATION.migration_location);
+        .build(manager)?;
 
-    let pool = Arc::new(pool);
+    let pool = Arc::new(RwLock::new(pool));
 
     let user_repository = UserRepository::new(Arc::clone(&pool));
     let session_repository = SessionRepository::new(Arc::clone(&pool));
@@ -53,11 +47,11 @@ pub fn new() -> Container {
         ),
     });
     let controllers: Controllers = Controllers {
-        user_controller: UserController::new(services.user_service.clone()),
-        auth_controller: AuthController::new(services.auth_service.clone()),
+        user_controller: UserController::new(Arc::clone(&services.user_service)),
+        auth_controller: AuthController::new(Arc::clone(&services.auth_service)),
     };
     let container = Container { services: services, controllers: controllers };
-    return container;
+    return Ok(container);
 }
 
 fn get_database_connection() -> ConnectionManager<PgConnection> {

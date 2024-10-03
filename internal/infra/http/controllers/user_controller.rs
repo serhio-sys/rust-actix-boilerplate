@@ -1,4 +1,4 @@
-use std::sync::{ Arc, Mutex };
+use std::sync::Arc;
 
 use actix_web::{ web, HttpResponse, Responder };
 
@@ -6,16 +6,16 @@ use crate::{ infra::http::resources::BasedListResponse, services::user_service::
 
 #[derive(Clone)]
 pub struct UserController {
-    user_service: Arc<Mutex<UserService>>,
+    user_service: Arc<UserService>,
 }
 
 impl UserController {
-    pub fn new(user_service: Arc<Mutex<UserService>>) -> UserController {
+    pub fn new(user_service: Arc<UserService>) -> UserController {
         return UserController { user_service };
     }
 
     async fn get_users(&self) -> impl Responder {
-        match self.user_service.lock().unwrap().get_all_users() {
+        match self.user_service.get_all_users() {
             Ok(users) => {
                 let response = BasedListResponse {
                     data: users,
@@ -31,7 +31,7 @@ impl UserController {
     }
 
     async fn get_user_by_id(&self, user_id: i32) -> impl Responder {
-        match self.user_service.lock().unwrap().get_user_by_id(user_id) {
+        match self.user_service.get_user_by_id(user_id) {
             Ok(user) => {
                 return HttpResponse::Ok().json(user);
             }

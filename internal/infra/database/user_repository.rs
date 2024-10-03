@@ -1,4 +1,4 @@
-use std::sync::{ Arc, Mutex };
+use std::sync::{ Arc, RwLock };
 
 use chrono::{ NaiveDateTime, Utc };
 use diesel::{
@@ -66,19 +66,19 @@ impl UserInsertable {
 
 #[derive(Clone)]
 pub struct UserRepository {
-    pub pool: Arc<Pool<ConnectionManager<PgConnection>>>,
+    pub pool: Arc<RwLock<Pool<ConnectionManager<PgConnection>>>>,
 }
 
 impl UserRepository {
-    pub fn new(pool: Arc<Pool<ConnectionManager<PgConnection>>>) -> Arc<Mutex<UserRepository>> {
-        return Arc::new(Mutex::new(UserRepository { pool }));
+    pub fn new(pool: Arc<RwLock<Pool<ConnectionManager<PgConnection>>>>) -> Arc<UserRepository> {
+        return Arc::new(UserRepository { pool });
     }
 
     pub fn get_connection(&self) -> PooledConnection<ConnectionManager<PgConnection>> {
-        self.pool.get().expect("Failed to get a connection")
+        self.pool.write().unwrap().get().unwrap()
     }
 
-    pub fn create_user(&mut self, user_dto: &UserRequest) -> Result<User, diesel::result::Error> {
+    pub fn create_user(&self, user_dto: &UserRequest) -> Result<User, diesel::result::Error> {
         use users::dsl::users;
         let user_model = UserInsertable::new(
             user_dto.name.clone(),
@@ -93,13 +93,13 @@ impl UserRepository {
         return Ok(new_user);
     }
 
-    pub fn find_all(&mut self) -> Result<Vec<User>, diesel::result::Error> {
+    pub fn find_all(&self) -> Result<Vec<User>, diesel::result::Error> {
         use users::dsl::users;
         let users_list = users.load::<User>(&mut self.get_connection())?;
         return Ok(users_list);
     }
 
-    pub fn find_by_id(&mut self, user_id: i32) -> Result<User, diesel::result::Error> {
+    pub fn find_by_id(&self, user_id: i32) -> Result<User, diesel::result::Error> {
         use self::users::dsl::*;
         return users
             .filter(id.eq(user_id))
@@ -107,7 +107,7 @@ impl UserRepository {
             .map_err(Into::into);
     }
 
-    pub fn find_by_email(&mut self, user_email: &str) -> Result<User, diesel::result::Error> {
+    pub fn find_by_email(&self, user_email: &str) -> Result<User, diesel::result::Error> {
         use self::users::dsl::*;
         return users
             .filter(email.eq(user_email))
