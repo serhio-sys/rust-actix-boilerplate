@@ -3,7 +3,7 @@ use std::sync::Arc;
 use actix_web::{ web, HttpMessage, HttpRequest, HttpResponse, Responder };
 
 use crate::{
-    infra::{ domain::user::UserDTO, http::resources::BasedListResponse },
+    infra::{ domain::user::UserDTO, http::resources::{ BasedListResponse, ErrorResponse } },
     services::user_service::UserService,
 };
 
@@ -28,7 +28,9 @@ impl UserController {
                 return HttpResponse::Ok().json(response);
             }
             Err(e) => {
-                return HttpResponse::BadRequest().json(e.to_string());
+                return HttpResponse::BadRequest().json(
+                    ErrorResponse::new(Some(e.to_string()), None)
+                );
             }
         }
     }
@@ -47,7 +49,9 @@ impl UserController {
                     return HttpResponse::Ok().finish().map_into_boxed_body();
                 }
                 Err(e) => {
-                    return HttpResponse::BadRequest().json(e.to_string());
+                    return HttpResponse::BadRequest().json(
+                        ErrorResponse::new(Some(e.to_string()), None)
+                    );
                 }
             }
         }

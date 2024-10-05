@@ -5,7 +5,10 @@ use actix_web::{ web, HttpMessage, HttpRequest, HttpResponse, Responder };
 use crate::{
     infra::{
         domain::session::SessionDTO,
-        http::requests::user_request::{ AuthRequest, UserRequest },
+        http::{
+            requests::{ user_request::{ AuthRequest, UserRequest }, JsonValidator },
+            resources::ErrorResponse,
+        },
     },
     services::auth_service::{ AuthService, Claims },
 };
@@ -20,13 +23,15 @@ impl AuthController {
         return AuthController { auth_service };
     }
 
-    async fn register(&self, user: web::Json<UserRequest>) -> impl Responder {
+    async fn register(&self, user: JsonValidator<UserRequest>) -> impl Responder {
         match self.auth_service.register(user.into_inner()) {
             Ok(user) => {
                 return HttpResponse::Created().json(user);
             }
             Err(e) => {
-                return HttpResponse::BadRequest().json(e.to_string());
+                return HttpResponse::BadRequest().json(
+                    ErrorResponse::new(Some(e.to_string()), None)
+                );
             }
         }
     }
@@ -37,7 +42,9 @@ impl AuthController {
                 return HttpResponse::Ok().json(user);
             }
             Err(e) => {
-                return HttpResponse::BadRequest().json(e.to_string());
+                return HttpResponse::BadRequest().json(
+                    ErrorResponse::new(Some(e.to_string()), None)
+                );
             }
         }
     }
@@ -53,7 +60,9 @@ impl AuthController {
                     return HttpResponse::Ok().finish().map_into_boxed_body();
                 }
                 Err(e) => {
-                    return HttpResponse::BadRequest().json(e.to_string());
+                    return HttpResponse::BadRequest().json(
+                        ErrorResponse::new(Some(e.to_string()), None)
+                    );
                 }
             }
         } else {
@@ -71,7 +80,7 @@ pub async fn logout(
 
 pub async fn register(
     auth_controller: web::Data<AuthController>,
-    user: web::Json<UserRequest>
+    user: JsonValidator<UserRequest>
 ) -> impl Responder {
     return auth_controller.register(user).await;
 }

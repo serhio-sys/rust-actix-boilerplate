@@ -9,15 +9,30 @@ path = "internal.rs"
 
 [dependencies]
 config = { path = "../config" }
-serde = { version = "1.0", features = ["derive"] }
+
+# Database libs 
 diesel = { version = "2.2.0", features = ["postgres", "chrono", "uuid", "r2d2"] }
 diesel_migrations = { version = "2.2.0" }
 chrono = { version = "0.4.38", features = ["serde"] }
-jsonwebtoken = { version = "8.1" }
 uuid = { version = "1.2", features = ["v4", "serde"] }
-pwhash = "1"
+
+# Validation and serialization
+validator = { version = "0.18.1", features = ["derive"] }
+futures = "0.3"
+mime = "0.3"
+serde_qs = { version = "0.13", features = ["actix4"] }
+serde_urlencoded = "0.7"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+# Hashing
+pwhash = "1"
+
 rand = "0.8" 
+
 thiserror = "1.0"
+
+# Actix
 actix-web = "4"
 actix-cors = "0.7.0"
+jsonwebtoken = { version = "8.1" }

@@ -32,10 +32,10 @@ pub struct AuthService {
 
 #[derive(Error, Debug)]
 pub enum AuthServiceError {
-    #[error("Database error: {0}")] DieselError(diesel::result::Error),
-    #[error("Hash error: {0}")] ArgonError(pwhash::error::Error),
-    #[error("JWT error: {0}")] JWTError(jsonwebtoken::errors::Error),
-    #[error("Service error: {0}")] ServiceError(Box<dyn error::Error>),
+    #[error("{0}")] DieselError(diesel::result::Error),
+    #[error("{0}")] ArgonError(pwhash::error::Error),
+    #[error("{0}")] JWTError(jsonwebtoken::errors::Error),
+    #[error("{0}")] ServiceError(Box<dyn error::Error>),
 }
 
 impl AuthService {
@@ -56,7 +56,7 @@ impl AuthService {
         if let Ok(_) = self.user_repository.find_by_email(&user.email) {
             return Err(
                 AuthServiceError::ServiceError(
-                    Box::from("User is already by provided email exists!")
+                    Box::from("User is already exists by provided email!")
                 )
             );
         }
@@ -183,7 +183,7 @@ fn verify_password(hash: &str, password: &str) -> bool {
     return bcrypt::verify(password, hash);
 }
 
-fn hash_user_password(password: &str) -> Result<String, pwhash::error::Error> {
+pub fn hash_user_password(password: &str) -> Result<String, pwhash::error::Error> {
     return bcrypt::hash_with(
         BcryptSetup {
             variant: Some(bcrypt::BcryptVariant::V2b),
