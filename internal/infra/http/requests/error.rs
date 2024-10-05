@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use actix_web::http::StatusCode;
 use actix_web::{ HttpResponse, ResponseError };
+use config::log::debug;
 use thiserror::Error;
 use validator::{ ValidationError, ValidationErrors, ValidationErrorsKind };
 
@@ -38,7 +41,7 @@ impl ResponseError for Error {
         let mut response = ErrorResponse::new(None, None);
         match self {
             Self::Validate(e) => {
-                response.field_errors = Some(e.clone().into_errors());
+                response.field_errors = Some(flatten_errors(e));
             }
             _ => {
                 response.error = Some(format!("{}", *self));
@@ -48,12 +51,29 @@ impl ResponseError for Error {
     }
 }
 
-/// Helper function for error extraction and formatting.
-/// Return Vec of tuples where first element is full field path (separated by dot)
-/// and second is error.
 #[inline]
-pub fn flatten_errors(errors: &ValidationErrors) -> Vec<(u16, String, &ValidationError)> {
-    _flatten_errors(errors, None, None)
+fn flatten_errors(errors: &ValidationErrors) -> HashMap<String, Vec<String>> {
+    let mut mapped_errors: HashMap<String, Vec<String>> = HashMap::new();
+    for error in errors.errors() {
+        match error.1 {
+            ValidationErrorsKind::Field(field_errors) => {
+                mapped_errors.insert(
+                    error.0.to_string(),
+                    field_errors
+                        .iter()
+                        .map(|val_error| val_error.message.as_deref().unwrap().to_string())
+                        .collect()
+                );
+            }
+            ValidationErrorsKind::List(list_error) => {
+                debug!("{:?}", list_error);
+            }
+            ValidationErrorsKind::Struct(struct_errors) => {
+                debug!("{:?}", struct_errors);
+            }
+        }
+    }
+    return mapped_errors;
 }
 
 #[inline]

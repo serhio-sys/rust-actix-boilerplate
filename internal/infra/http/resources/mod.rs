@@ -14,16 +14,14 @@ pub struct BasedListResponse<T> where T: Serialize {
 #[derive(Serialize)]
 pub struct ErrorResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub field_errors: Option<HashMap<&'static str, validator::ValidationErrorsKind>>,
+    pub field_errors: Option<HashMap<String, Vec<String>>>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<String>,
 }
 
 impl ErrorResponse {
-    pub fn new(
-        error: Option<String>,
-        field_errors: Option<HashMap<&'static str, validator::ValidationErrorsKind>>
-    ) -> Self {
+    pub fn new(error: Option<String>, field_errors: Option<HashMap<String, Vec<String>>>) -> Self {
         return ErrorResponse { field_errors, error };
     }
 }
