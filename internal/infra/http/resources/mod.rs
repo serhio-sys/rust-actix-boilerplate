@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::Serialize;
 
-pub mod user_resouce;
+pub mod user_resource;
 
 #[derive(Serialize, Clone, PartialEq)]
 pub struct BasedListResponse<T> where T: Serialize {
@@ -21,7 +21,11 @@ pub struct ErrorResponse {
 }
 
 impl ErrorResponse {
-    pub fn new(error: Option<String>, field_errors: Option<HashMap<String, Vec<String>>>) -> Self {
-        return ErrorResponse { field_errors, error };
+    pub fn new_error(error: Option<String>) -> Self {
+        return ErrorResponse { field_errors: None, error };
+    }
+
+    pub fn new_field_errors(field_errors: Option<HashMap<String, Vec<String>>>) -> Self {
+        return ErrorResponse { field_errors, error: None };
     }
 }

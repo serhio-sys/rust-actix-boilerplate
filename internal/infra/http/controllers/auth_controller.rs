@@ -30,7 +30,7 @@ impl AuthController {
             }
             Err(e) => {
                 return HttpResponse::BadRequest().json(
-                    ErrorResponse::new(Some(e.to_string()), None)
+                    ErrorResponse::new_error(Some(e.to_string()))
                 );
             }
         }
@@ -43,7 +43,7 @@ impl AuthController {
             }
             Err(e) => {
                 return HttpResponse::BadRequest().json(
-                    ErrorResponse::new(Some(e.to_string()), None)
+                    ErrorResponse::new_error(Some(e.to_string()))
                 );
             }
         }
@@ -61,7 +61,7 @@ impl AuthController {
                 }
                 Err(e) => {
                     return HttpResponse::BadRequest().json(
-                        ErrorResponse::new(Some(e.to_string()), None)
+                        ErrorResponse::new_error(Some(e.to_string()))
                     );
                 }
             }

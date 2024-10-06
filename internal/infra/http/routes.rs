@@ -8,17 +8,24 @@ use actix_web::{
     Responder,
     Scope,
 };
+use serde::Serialize;
 
-use crate::container::container::Container;
+use crate::{ container::container::Container, services::user_service::UserService };
 
 const BASIC_PATH: &str = "/api/v1";
 
 use super::{
     controllers::{
         auth_controller::{ login, logout, register, AuthController },
-        user_controller::{ delete, find_all, find_me, UserController },
+        user_controller::{ delete, find_all, find_me, update, UserController },
     },
-    middlewares::auth_middleware::auth_middleware,
+    middlewares::{
+        auth_middleware::auth_middleware,
+        is_owner_middleware::is_owner_middleware,
+        path_object_middleware::path_object_middleware,
+        Findable,
+        Userable,
+    },
 };
 
 pub fn init_routes(cfg: &mut web::ServiceConfig, container: Arc<Container>) {
@@ -77,11 +84,12 @@ fn init_user_routes(
         InitError = ()
     >
 > {
-    return protected_route(container, "/user")
+    return protected_route(Arc::clone(&container), "/user")
         .app_data(us_controller)
         .route("/all", web::get().to(find_all))
         .route("", web::get().to(find_me))
-        .route("", web::delete().to(delete));
+        .route("", web::delete().to(delete))
+        .route("", web::put().to(update));
 }
 
 fn protected_route(
@@ -101,6 +109,66 @@ fn protected_route(
             return auth_middleware(
                 Arc::clone(&container.services.user_service),
                 Arc::clone(&container.services.auth_service),
+                req,
+                next
+            );
+        })
+    );
+}
+
+// TODO
+#[allow(dead_code)]
+fn is_owner_route<T>(
+    user_id_key: String,
+    container: Arc<Container>,
+    path: &str
+)
+    -> Scope<
+        impl ServiceFactory<
+            ServiceRequest,
+            Config = (),
+            Response = ServiceResponse,
+            Error = actix_web::Error,
+            InitError = ()
+        >
+    >
+    where T: Serialize + Userable, UserService: Findable<T>
+{
+    return web::scope(path).wrap(
+        from_fn(move |req: ServiceRequest, next| {
+            return is_owner_middleware(
+                Arc::clone(&container.services.user_service) as Arc<dyn Findable<T>>,
+                user_id_key.clone(),
+                req,
+                next
+            );
+        })
+    );
+}
+
+// TODO
+#[allow(dead_code)]
+fn path_object_route<T>(
+    user_id_key: String,
+    container: Arc<Container>,
+    path: &str
+)
+    -> Scope<
+        impl ServiceFactory<
+            ServiceRequest,
+            Config = (),
+            Response = ServiceResponse,
+            Error = actix_web::Error,
+            InitError = ()
+        >
+    >
+    where T: Serialize + Userable, UserService: Findable<T>
+{
+    return web::scope(path).wrap(
+        from_fn(move |req: ServiceRequest, next| {
+            return path_object_middleware(
+                Arc::clone(&container.services.user_service) as Arc<dyn Findable<T>>,
+                user_id_key.clone(),
                 req,
                 next
             );

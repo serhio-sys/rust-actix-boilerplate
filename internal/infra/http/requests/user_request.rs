@@ -15,8 +15,6 @@ pub struct UserRequest {
 pub struct UserUpdateRequest {
     #[validate(length(min = 4, message = "Name must be at least 4 characters long"))]
     pub name: Option<String>,
-    #[validate(length(min = 4, message = "Password must be at least 4 characters long"))]
-    pub password: Option<String>,
     #[validate(email(message = "Email must be a valid email address"))]
     pub email: Option<String>,
 }

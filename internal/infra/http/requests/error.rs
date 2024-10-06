@@ -38,13 +38,13 @@ impl From<serde_urlencoded::de::Error> for Error {
 
 impl ResponseError for Error {
     fn error_response(&self) -> HttpResponse {
-        let mut response = ErrorResponse::new(None, None);
+        let response: ErrorResponse;
         match self {
             Self::Validate(e) => {
-                response.field_errors = Some(flatten_errors(e));
+                response = ErrorResponse::new_field_errors(Some(flatten_errors(e)));
             }
             _ => {
-                response.error = Some(format!("{}", *self));
+                response = ErrorResponse::new_error(Some(format!("{}", *self)));
             }
         }
         return HttpResponse::build(StatusCode::BAD_REQUEST).json(response);

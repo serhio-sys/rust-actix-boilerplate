@@ -2,7 +2,7 @@ use std::sync::{ Arc, RwLock };
 
 use chrono::{ NaiveDateTime, Utc };
 use diesel::{
-    prelude::{ Insertable, Queryable },
+    prelude::{ AsChangeset, Insertable, Queryable },
     query_dsl::methods::FilterDsl,
     r2d2::{ ConnectionManager, Pool, PooledConnection },
     ExpressionMethods,
@@ -12,7 +12,7 @@ use diesel::{
     SelectableHelper,
 };
 
-use crate::infra::http::requests::user_request::UserRequest;
+use crate::infra::{ domain::user::UserDTO, http::requests::user_request::UserRequest };
 
 diesel::table! {
     users (id) {
@@ -26,7 +26,7 @@ diesel::table! {
     }
 }
 
-#[derive(Selectable, Queryable, Debug)]
+#[derive(Selectable, AsChangeset, Queryable, Debug)]
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct User {
@@ -117,6 +117,16 @@ impl UserRepository {
             .filter(deleted_date.is_null())
             .first::<User>(&mut self.get_connection())
             .map_err(Into::into);
+    }
+
+    pub fn update(&self, user_to_update: &UserDTO) -> Result<User, diesel::result::Error> {
+        use self::users::dsl::*;
+        let user = user_to_update.dto_to_model();
+        let query = diesel::update(users.filter(id.eq(user.id)));
+        return query
+            .set(user)
+            .returning(User::as_returning())
+            .get_result(&mut self.get_connection());
     }
 
     pub fn delete(&self, user_id: i32) -> Result<usize, diesel::result::Error> {
