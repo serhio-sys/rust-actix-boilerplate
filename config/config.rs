@@ -31,6 +31,8 @@ fn get_configuration() -> Configuration {
         database_user: get_var("DATABASE_USER"),
         database_password: get_var("DATABASE_PASSWORD"),
         migration_location: get_var("MIGRATION_LOCATION"),
+        // 2024-09-21-122416 - example of migration verison.
+        // latest - for running migration to last one in migrations folder.
         migration_version: get_var_or_default("MIGRATE_TO", "latest"),
         jwt_ttl: 72 * 3600,
         jwt_secret: get_var_or_default("JWT_SECRET", "1234567890"),
