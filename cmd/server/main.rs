@@ -1,7 +1,10 @@
 use core::panic;
 
 use config::logger::init_logger;
-use internal::{ container::container::new, infra::{ database::migration::migrate, http::server } };
+use internal::{
+    container::container::new,
+    infra::{database::migration::migrate, http::server},
+};
 
 #[actix_web::main]
 async fn main() {
@@ -12,12 +15,10 @@ async fn main() {
     }
 
     match new() {
-        Ok(container) => {
-            match server::start_server(container).await {
-                Ok(res) => res,
-                Err(e) => panic!("{}", e.to_string()),
-            }
-        }
+        Ok(container) => match server::start_server(container).await {
+            Ok(res) => res,
+            Err(e) => panic!("{}", e.to_string()),
+        },
         Err(e) => panic!("{}", e.to_string()),
     }
 }

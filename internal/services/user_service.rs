@@ -41,27 +41,13 @@ impl UserService {
     }
 
     pub fn find_all(&self) -> Result<Vec<UserDTO>, diesel::result::Error> {
-        match self.user_repository.find_all() {
-            Ok(users) => {
-                return Ok(UserDTO::models_to_dto(users));
-            }
-            Err(e) => {
-                error!("Error in User Service: {}", e);
-                return Err(e);
-            }
-        }
+        let users = self.user_repository.find_all()?;
+        return Ok(UserDTO::models_to_dto(users));
     }
 
-    pub fn find_by_id(&self, user_id: i32) -> Result<UserDTO, UserServiceError> {
-        match self.user_repository.find_by_id(user_id) {
-            Ok(user) => {
-                return Ok(UserDTO::model_to_dto(user));
-            }
-            Err(e) => {
-                error!("Error in User Service: {}", e);
-                return Err(UserServiceError::DieselError(e));
-            }
-        }
+    pub fn find_by_id(&self, user_id: i32) -> Result<UserDTO, diesel::result::Error> {
+        let user = self.user_repository.find_by_id(user_id)?;
+        return Ok(UserDTO::model_to_dto(user));
     }
 
     pub fn update(
@@ -93,21 +79,9 @@ impl UserService {
         }
     }
 
-    pub fn delete(&self, user_id: i32) -> Result<(), UserServiceError> {
-        match self.user_repository.delete(user_id) {
-            Ok(_) => {
-                match self.session_repository.delete_by_user_id(user_id) {
-                    Ok(_) => {
-                        return Ok(());
-                    }
-                    Err(e) => {
-                        return Err(UserServiceError::DieselError(e));
-                    }
-                }
-            }
-            Err(e) => {
-                return Err(UserServiceError::DieselError(e));
-            }
-        }
+    pub fn delete(&self, user_id: i32) -> Result<(), diesel::result::Error> {
+        self.user_repository.delete(user_id)?;
+        self.session_repository.delete_by_user_id(user_id)?;
+        return Ok(());
     }
 }
