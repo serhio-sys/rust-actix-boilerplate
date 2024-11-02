@@ -1,7 +1,10 @@
 use chrono::NaiveDateTime;
 use serde::Serialize;
 
-use crate::infra::{ database::user_repository::User, http::middlewares::Userable };
+use crate::infra::{
+    database::user_repository::User,
+    http::{ middlewares::Userable, resources::user_resource::UserResponse },
+};
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct UserDTO {
@@ -9,14 +12,15 @@ pub struct UserDTO {
     pub name: String,
     pub password: String,
     pub email: String,
+    pub avatar: Option<String>,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
     pub deleted_date: Option<NaiveDateTime>,
 }
 
-#[derive(Clone, PartialEq, Serialize)]
+#[derive(Clone, Serialize)]
 pub struct AuthenticatedUserDTO {
-    pub user: UserDTO,
+    pub user: UserResponse,
     pub token: String,
 }
 
@@ -27,6 +31,7 @@ impl UserDTO {
             name: user.name,
             password: user.password,
             email: user.email,
+            avatar: user.avatar,
             created_date: user.created_date,
             updated_date: user.updated_date,
             deleted_date: user.deleted_date,
@@ -47,6 +52,7 @@ impl UserDTO {
             name: self.name.clone(),
             password: self.password.clone(),
             email: self.email.clone(),
+            avatar: self.avatar.clone(),
             created_date: self.created_date,
             updated_date: self.updated_date,
             deleted_date: self.deleted_date,

@@ -24,7 +24,7 @@ impl AuthController {
     }
 
     async fn register(&self, user: JsonValidator<UserRequest>) -> impl Responder {
-        match self.auth_service.register(user.into_inner()) {
+        match self.auth_service.register(user.into_inner()).await {
             Ok(user) => {
                 return HttpResponse::Created().json(user);
             }

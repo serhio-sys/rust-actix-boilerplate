@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use actix_cors::Cors;
-use actix_web::{ middleware::Logger, App, HttpServer };
+use actix_web::{ middleware::Logger, web::JsonConfig, App, HttpServer };
 
 use crate::container::container::Container;
 
@@ -19,6 +19,7 @@ pub async fn start_server(container: Container) -> std::io::Result<()> {
             .expose_headers(["Link"])
             .max_age(300);
         return App::new()
+            .app_data(JsonConfig::default().limit(4 * 1024 * 1024))
             .wrap(logger)
             .wrap(cors)
             .configure(|cfg| routes::init_routes(cfg, container_clone.clone()));

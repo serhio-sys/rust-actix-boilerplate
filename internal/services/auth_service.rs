@@ -1,6 +1,7 @@
 use core::error;
 use std::{ sync::Arc, time::{ Duration, SystemTime, UNIX_EPOCH } };
 
+use base64::Engine;
 use config::CONFIGURATION;
 use config::log::warn;
 use pwhash::bcrypt::{ self, BcryptSetup };
@@ -9,13 +10,19 @@ use serde::{ Deserialize, Serialize };
 use thiserror::Error;
 use uuid::Uuid;
 
-use crate::infra::{
-    database::{
-        session_repository::{ Session, SessionRepository },
-        user_repository::UserRepository,
+use crate::{
+    filesystem::image_storage_service::ImageStorageService,
+    infra::{
+        database::{
+            session_repository::{ Session, SessionRepository },
+            user_repository::UserRepository,
+        },
+        domain::{ session::SessionDTO, user::{ AuthenticatedUserDTO, UserDTO } },
+        http::{
+            requests::user_request::{ AuthRequest, UserRequest },
+            resources::user_resource::UserResponse,
+        },
     },
-    domain::{ session::SessionDTO, user::{ AuthenticatedUserDTO, UserDTO } },
-    http::requests::user_request::{ AuthRequest, UserRequest },
 };
 
 #[derive(Serialize, Clone, Deserialize)]
@@ -28,6 +35,7 @@ pub struct Claims {
 pub struct AuthService {
     user_repository: Arc<UserRepository>,
     session_repository: Arc<SessionRepository>,
+    file_system: Arc<ImageStorageService>,
 }
 
 #[derive(Error, Debug)]
@@ -35,21 +43,23 @@ pub enum AuthServiceError {
     #[error("{0}")] DieselError(diesel::result::Error),
     #[error("{0}")] ArgonError(pwhash::error::Error),
     #[error("{0}")] JWTError(jsonwebtoken::errors::Error),
-    #[error("{0}")] ServiceError(Box<dyn error::Error>),
+    #[error("{0}")] ServiceError(Box<dyn error::Error + Send + Sync + 'static>),
 }
 
 impl AuthService {
     pub fn new(
         user_repository: Arc<UserRepository>,
-        session_repository: Arc<SessionRepository>
+        session_repository: Arc<SessionRepository>,
+        file_system: Arc<ImageStorageService>
     ) -> Arc<AuthService> {
         return Arc::new(AuthService {
             session_repository,
             user_repository,
+            file_system,
         });
     }
 
-    pub fn register(
+    pub async fn register(
         &self,
         mut user: UserRequest
     ) -> Result<AuthenticatedUserDTO, AuthServiceError> {
@@ -65,14 +75,38 @@ impl AuthService {
             user.password = hashed;
             match self.user_repository.create_user(&user) {
                 Ok(saved_user) => {
-                    return match self.generate_jwt(saved_user.id) {
+                    let mut user_to_response = saved_user;
+                    let filename = format!("user/user_avatar_{}.png", user_to_response.id);
+                    if let Some(avatar) = user.avatar {
+                        if
+                            let Ok(decoded_image) =
+                                base64::engine::general_purpose::STANDARD.decode(avatar)
+                        {
+                            if let Err(e) = self.file_system.save_image(&filename, &decoded_image) {
+                                let _ = self.user_repository.delete(user_to_response.id);
+                                return Err(AuthServiceError::ServiceError(e));
+                            }
+                            match self.user_repository.update_avatar(user_to_response.id, filename) {
+                                Ok(updated_user) => {
+                                    user_to_response = updated_user;
+                                }
+                                Err(e) => {
+                                    let _ = self.user_repository.delete(user_to_response.id);
+                                    return Err(AuthServiceError::DieselError(e));
+                                }
+                            }
+                        }
+                    }
+                    match self.generate_jwt(user_to_response.id) {
                         Ok(token) => {
                             return Ok(AuthenticatedUserDTO {
-                                user: UserDTO::model_to_dto(saved_user),
-                                token: token,
+                                user: UserResponse::user_to_response(&user_to_response),
+                                token,
                             });
                         }
-                        Err(e) => Err(e),
+                        Err(e) => {
+                            return Err(e);
+                        }
                     };
                 }
                 Err(e) => {
@@ -94,7 +128,7 @@ impl AuthService {
                     match self.generate_jwt(user_dto.id.unwrap()) {
                         Ok(token) => {
                             return Ok(AuthenticatedUserDTO {
-                                user: user_dto,
+                                user: UserResponse::dto_to_response(&user_dto),
                                 token: token.to_string(),
                             });
                         }

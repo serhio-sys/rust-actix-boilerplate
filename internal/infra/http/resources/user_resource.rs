@@ -1,13 +1,14 @@
 use chrono::NaiveDateTime;
 use serde::Serialize;
 
-use crate::infra::domain::user::UserDTO;
+use crate::infra::{ database::user_repository::User, domain::user::UserDTO };
 
 #[derive(Clone, Serialize)]
 pub struct UserResponse {
     pub id: i32,
     pub name: String,
     pub email: String,
+    pub avatar: Option<String>,
     pub created_date: NaiveDateTime,
     pub updated_date: NaiveDateTime,
     pub deleted_date: Option<NaiveDateTime>,
@@ -19,6 +20,19 @@ impl UserResponse {
             id: dto.id.unwrap(),
             name: dto.name.clone(),
             email: dto.email.clone(),
+            avatar: dto.avatar.clone(),
+            created_date: dto.created_date,
+            updated_date: dto.updated_date,
+            deleted_date: dto.deleted_date,
+        };
+    }
+
+    pub fn user_to_response(dto: &User) -> Self {
+        return UserResponse {
+            id: dto.id,
+            name: dto.name.clone(),
+            email: dto.email.clone(),
+            avatar: dto.avatar.clone(),
             created_date: dto.created_date,
             updated_date: dto.updated_date,
             deleted_date: dto.deleted_date,

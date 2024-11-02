@@ -70,7 +70,7 @@ impl UserController {
 
     async fn delete(&self, request: HttpRequest) -> impl Responder {
         if let Some(user) = request.extensions_mut().get::<UserDTO>() {
-            match self.user_service.delete(user.id.unwrap()) {
+            match self.user_service.delete(user) {
                 Ok(_) => {
                     return HttpResponse::Ok().finish().map_into_boxed_body();
                 }

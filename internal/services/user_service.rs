@@ -3,15 +3,22 @@ use std::sync::Arc;
 use config::log::error;
 use thiserror::Error;
 
-use crate::infra::{
-    database::{ session_repository::SessionRepository, user_repository::UserRepository },
-    domain::user::UserDTO,
-    http::{ middlewares::Findable, requests::{ user_request::UserUpdateRequest, JsonValidator } },
+use crate::{
+    filesystem::image_storage_service::ImageStorageService,
+    infra::{
+        database::{ session_repository::SessionRepository, user_repository::UserRepository },
+        domain::user::UserDTO,
+        http::{
+            middlewares::Findable,
+            requests::{ user_request::UserUpdateRequest, JsonValidator },
+        },
+    },
 };
 
 pub struct UserService {
     session_repository: Arc<SessionRepository>,
     user_repository: Arc<UserRepository>,
+    file_system: Arc<ImageStorageService>,
 }
 
 #[derive(Error, Debug)]
@@ -32,11 +39,13 @@ impl Findable<UserDTO> for UserService {
 impl UserService {
     pub fn new(
         user_repo: Arc<UserRepository>,
-        session_repository: Arc<SessionRepository>
+        session_repository: Arc<SessionRepository>,
+        file_system: Arc<ImageStorageService>
     ) -> Arc<UserService> {
         return Arc::from(UserService {
             user_repository: user_repo,
             session_repository: session_repository,
+            file_system: file_system,
         });
     }
 
@@ -79,9 +88,15 @@ impl UserService {
         }
     }
 
-    pub fn delete(&self, user_id: i32) -> Result<(), diesel::result::Error> {
-        self.user_repository.delete(user_id)?;
-        self.session_repository.delete_by_user_id(user_id)?;
+    pub fn delete(
+        &self,
+        user: &UserDTO
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
+        self.user_repository.delete(user.id.unwrap())?;
+        self.session_repository.delete_by_user_id(user.id.unwrap())?;
+        if let Some(avatar) = &user.avatar {
+            self.file_system.remove_file_image(avatar)?;
+        }
         return Ok(());
     }
 }

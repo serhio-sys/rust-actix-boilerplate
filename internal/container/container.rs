@@ -3,6 +3,7 @@ use config::CONFIGURATION;
 use diesel::{ r2d2::{ ConnectionManager, Pool }, PgConnection };
 
 use crate::{
+    filesystem::image_storage_service::ImageStorageService,
     infra::{
         database::{ session_repository::SessionRepository, user_repository::UserRepository },
         http::controllers::{ auth_controller::AuthController, user_controller::UserController },
@@ -39,14 +40,17 @@ pub fn new() -> Result<Container, Box<dyn std::error::Error + Send + Sync + 'sta
 
     let user_repository = UserRepository::new(Arc::clone(&pool));
     let session_repository = SessionRepository::new(Arc::clone(&pool));
+    let file_service = Arc::new(ImageStorageService::new(&CONFIGURATION.file_storage_location));
     let services: Arc<Services> = Arc::new(Services {
         user_service: UserService::new(
             Arc::clone(&user_repository),
-            Arc::clone(&session_repository)
+            Arc::clone(&session_repository),
+            Arc::clone(&file_service)
         ),
         auth_service: AuthService::new(
             Arc::clone(&user_repository),
-            Arc::clone(&session_repository)
+            Arc::clone(&session_repository),
+            Arc::clone(&file_service)
         ),
     });
     let controllers: Controllers = Controllers {

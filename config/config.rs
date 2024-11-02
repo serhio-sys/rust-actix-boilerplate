@@ -17,6 +17,7 @@ pub struct Configuration {
     pub database_host: String,
     pub migration_location: String,
     pub migration_version: String,
+    pub file_storage_location: String,
     pub jwt_ttl: u64,
     pub jwt_secret: String,
 }
@@ -34,6 +35,7 @@ fn get_configuration() -> Configuration {
         // 2024-09-21-122416 - example of migration verison.
         // latest - for running migration to last one in migrations folder.
         migration_version: get_var_or_default("MIGRATE_TO", "latest"),
+        file_storage_location: get_var_or_default("FILE_STORAGE_LOCATION", "file_storage"),
         jwt_ttl: 72 * 3600,
         jwt_secret: get_var_or_default("JWT_SECRET", "1234567890"),
     };

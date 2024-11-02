@@ -25,6 +25,8 @@ serde_urlencoded = "0.7"
 serde = { version = "1.0", features = ["derive", "rc"] }
 serde_json = "1.0"
 
+base64 = "0.21"
+
 # Hashing
 pwhash = "1"
 
@@ -35,4 +37,5 @@ thiserror = "1.0"
 # Actix
 actix-web = "4"
 actix-cors = "0.7.0"
+actix-files = "0.6"
 jsonwebtoken = { version = "8.1" }

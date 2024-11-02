@@ -50,7 +50,7 @@ impl<T> FromRequest for JsonValidator<T> where T: DeserializeOwned + Validate + 
         let (limit, err, ctype) = req
             .app_data::<JsonConfig>()
             .map(|c| (c.limit, c.ehandler.clone(), c.content_type.clone()))
-            .unwrap_or((32768, None, None));
+            .unwrap_or((4 * 1024 * 1024, None, None));
 
         JsonBody::new(req, payload, ctype.as_deref(), false)
             .limit(limit)
@@ -121,7 +121,7 @@ impl JsonConfig {
 impl Default for JsonConfig {
     fn default() -> Self {
         JsonConfig {
-            limit: 32768,
+            limit: 4 * 1024 * 1024,
             ehandler: None,
             content_type: None,
         }

@@ -9,6 +9,7 @@ pub struct UserRequest {
     pub password: String,
     #[validate(email(message = "Email must be a valid email address"))]
     pub email: String,
+    pub avatar: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Validate)]

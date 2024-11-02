@@ -2,3 +2,4 @@
 .env
 .db.env
 .app.env
+file_storage

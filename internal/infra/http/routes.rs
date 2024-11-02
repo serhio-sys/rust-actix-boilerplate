@@ -8,6 +8,7 @@ use actix_web::{
     Responder,
     Scope,
 };
+use config::CONFIGURATION;
 use serde::Serialize;
 
 use crate::{ container::container::Container, services::user_service::UserService };
@@ -44,6 +45,11 @@ pub fn init_routes(cfg: &mut web::ServiceConfig, container: Arc<Container>) {
                 return HttpResponse::Ok().finish().map_into_boxed_body();
             })
         )
+    );
+    cfg.service(
+        actix_files::Files
+            ::new("/static", &CONFIGURATION.file_storage_location)
+            .show_files_listing()
     );
     cfg.default_service(web::get().to(not_found_handler));
 }
