@@ -38,14 +38,14 @@ impl Findable<UserDTO> for UserService {
 
 impl UserService {
     pub fn new(
-        user_repo: Arc<UserRepository>,
+        user_repository: Arc<UserRepository>,
         session_repository: Arc<SessionRepository>,
         file_system: Arc<ImageStorageService>
     ) -> Arc<UserService> {
         return Arc::from(UserService {
-            user_repository: user_repo,
-            session_repository: session_repository,
-            file_system: file_system,
+            user_repository,
+            session_repository,
+            file_system,
         });
     }
 
@@ -68,7 +68,7 @@ impl UserService {
             current_user.name = name.to_string();
         }
         if let Some(email) = &update_data.email {
-            if let Ok(_) = self.user_repository.find_by_email(&email) {
+            if self.user_repository.find_by_email(&email).is_ok() {
                 return Err(
                     UserServiceError::ServiceError(
                         Box::from("User is already exists by provided email!")
@@ -77,15 +77,11 @@ impl UserService {
             }
             current_user.email = email.to_string();
         }
-        match self.user_repository.update(current_user) {
-            Ok(user) => {
-                return Ok(UserDTO::model_to_dto(user));
-            }
-            Err(e) => {
-                error!("Error in User Service: {}", e);
-                return Err(UserServiceError::DieselError(e));
-            }
-        }
+        let user = self.user_repository
+            .update(current_user)
+            .map_err(UserServiceError::DieselError)?;
+
+        return Ok(UserDTO::model_to_dto(user));
     }
 
     pub fn delete(
