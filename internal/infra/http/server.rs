@@ -24,6 +24,6 @@ pub async fn start_server(container: Container) -> std::io::Result<()> {
             .wrap(cors)
             .configure(|cfg| routes::init_routes(cfg, container_clone.clone()));
     })
-        .bind(("127.0.0.1", 8080))?
+        .bind(("0.0.0.0", 8080))?
         .run().await
 }
