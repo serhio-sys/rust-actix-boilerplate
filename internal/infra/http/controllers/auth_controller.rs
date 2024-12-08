@@ -52,7 +52,7 @@ impl AuthController {
     async fn logout(&self, request: HttpRequest) -> impl Responder {
         if let Some(claims) = request.extensions_mut().get::<Claims>() {
             let session = SessionDTO {
-                user_id: claims.user_id,
+                user_id: claims.user_id.clone(),
                 uuid: claims.uuid.clone(),
             };
             match self.auth_service.logout(session) {

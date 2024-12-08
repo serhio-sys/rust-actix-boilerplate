@@ -111,10 +111,10 @@ impl UserRepository {
         return Ok(users_list);
     }
 
-    pub fn find_by_id(&self, user_id: i32) -> Result<User, diesel::result::Error> {
+    pub fn find_by_id(&self, user_id: Arc<i32>) -> Result<User, diesel::result::Error> {
         use self::users::dsl::*;
         return users
-            .filter(id.eq(user_id))
+            .filter(id.eq(*user_id))
             .filter(deleted_date.is_null())
             .first::<User>(&mut self.get_connection())
             .map_err(Into::into);
@@ -141,22 +141,22 @@ impl UserRepository {
 
     pub fn update_avatar(
         &self,
-        user_id: i32,
+        user_id: Arc<i32>,
         file_name: String
     ) -> Result<User, diesel::result::Error> {
         use self::users::dsl::*;
-        let query = diesel::update(users.filter(id.eq(user_id)));
+        let query = diesel::update(users.filter(id.eq(*user_id)));
         return query
             .set(avatar.eq(file_name))
             .returning(User::as_returning())
             .get_result(&mut self.get_connection());
     }
 
-    pub fn delete(&self, user_id: i32) -> Result<usize, diesel::result::Error> {
+    pub fn delete(&self, user_id: Arc<i32>) -> Result<usize, diesel::result::Error> {
         use self::users::dsl::*;
         return diesel
             ::update(users)
-            .filter(id.eq(user_id))
+            .filter(id.eq(*user_id))
             .set(deleted_date.eq(Utc::now().naive_local()))
             .execute(&mut self.get_connection());
     }

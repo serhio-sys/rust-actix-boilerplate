@@ -28,7 +28,7 @@ use super::user_image_name;
 
 #[derive(Serialize, Clone, Deserialize)]
 pub struct Claims {
-    pub user_id: i32,
+    pub user_id: Arc<i32>,
     pub uuid: Uuid,
     pub exp: usize,
 }
@@ -93,10 +93,10 @@ impl AuthService {
             .create_user(&user)
             .map_err(AuthServiceError::DieselError)?;
 
-        let token = self.generate_jwt(saved_user.id)?;
+        let token = self.generate_jwt(Arc::from(saved_user.id))?;
         return Ok(AuthenticatedUserDTO {
             user: UserResponse::user_to_response(&saved_user),
-            token,
+            token: Arc::from(token),
         });
     }
 
@@ -110,10 +110,10 @@ impl AuthService {
 
         if verify_password(&user.password, &request_user.password) {
             let user_dto = UserDTO::model_to_dto(user);
-            let token = self.generate_jwt(user_dto.id.unwrap())?;
+            let token = self.generate_jwt(Arc::new(user_dto.id.unwrap()))?;
             return Ok(AuthenticatedUserDTO {
                 user: UserResponse::dto_to_response(&user_dto),
-                token: token.to_string(),
+                token: Arc::from(token.to_string()),
             });
         }
 
@@ -139,13 +139,13 @@ impl AuthService {
         return false;
     }
 
-    fn generate_jwt(&self, user_id: i32) -> Result<String, AuthServiceError> {
+    fn generate_jwt(&self, user_id: Arc<i32>) -> Result<String, AuthServiceError> {
         let session = SessionDTO { user_id, uuid: Uuid::new_v4() };
         let saved_session: Session = self.session_repository
             .save(session)
             .map_err(AuthServiceError::DieselError)?;
         let claims = Claims {
-            user_id: saved_session.user_id,
+            user_id: saved_session.user_id.into(),
             uuid: saved_session.uuid,
             exp: (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize) +
             (Duration::from_secs(CONFIGURATION.jwt_ttl).as_secs() as usize),

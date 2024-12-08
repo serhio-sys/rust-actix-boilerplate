@@ -33,7 +33,11 @@ pub async fn is_owner_middleware<T, B>(
             )
         );
     }
-    let result = path_object_insert(service, user_id.unwrap().parse::<i32>().unwrap(), &req);
+    let result = path_object_insert(
+        service,
+        Arc::from(user_id.unwrap().parse::<i32>().unwrap()),
+        &req
+    );
     if result.is_err() {
         return Ok(
             req.into_response(HttpResponse::BadRequest().json(result.unwrap_err().to_string()))

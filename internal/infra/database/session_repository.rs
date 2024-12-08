@@ -44,7 +44,7 @@ impl SessionRepository {
 
     pub fn save(&self, session: SessionDTO) -> Result<Session, diesel::result::Error> {
         use self::sessions::dsl::*;
-        let session_model = Session { user_id: session.user_id, uuid: session.uuid };
+        let session_model = Session { user_id: *session.user_id, uuid: session.uuid };
         let result = diesel
             ::insert_into(sessions)
             .values(&session_model)
@@ -57,7 +57,7 @@ impl SessionRepository {
         use diesel::dsl::exists;
         let exists = diesel
             ::select(
-                exists(sessions.filter(user_id.eq(&session.user_id)).filter(uuid.eq(&session.uuid)))
+                exists(sessions.filter(user_id.eq(*session.user_id)).filter(uuid.eq(&session.uuid)))
             )
             .get_result::<bool>(&mut self.get_connection())?;
         return Ok(exists);
@@ -66,15 +66,15 @@ impl SessionRepository {
     pub fn delete(&self, session: SessionDTO) -> Result<usize, diesel::result::Error> {
         use self::sessions::dsl::*;
         let result = diesel
-            ::delete(sessions.filter(user_id.eq(&session.user_id)).filter(uuid.eq(&session.uuid)))
+            ::delete(sessions.filter(user_id.eq(*session.user_id)).filter(uuid.eq(&session.uuid)))
             .execute(&mut self.get_connection());
         return result;
     }
 
-    pub fn delete_by_user_id(&self, id: i32) -> Result<usize, diesel::result::Error> {
+    pub fn delete_by_user_id(&self, id: Arc<i32>) -> Result<usize, diesel::result::Error> {
         use self::sessions::dsl::*;
         let result = diesel
-            ::delete(sessions.filter(user_id.eq(id)))
+            ::delete(sessions.filter(user_id.eq(*id)))
             .execute(&mut self.get_connection());
         return result;
     }

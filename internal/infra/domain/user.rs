@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::NaiveDateTime;
 use serde::Serialize;
 
@@ -8,60 +10,59 @@ use crate::infra::{
 
 #[derive(Clone, PartialEq, Serialize)]
 pub struct UserDTO {
-    pub id: Option<i32>,
-    pub name: String,
-    pub password: String,
-    pub email: String,
-    pub avatar: Option<String>,
-    pub created_date: NaiveDateTime,
-    pub updated_date: NaiveDateTime,
-    pub deleted_date: Option<NaiveDateTime>,
+    pub id: Arc<Option<i32>>,
+    pub name: Arc<str>,
+    pub password: Arc<str>,
+    pub email: Arc<str>,
+    pub avatar: Option<Arc<str>>,
+    pub created_date: Arc<NaiveDateTime>,
+    pub updated_date: Arc<NaiveDateTime>,
+    pub deleted_date: Arc<Option<NaiveDateTime>>,
 }
 
 #[derive(Clone, Serialize)]
 pub struct AuthenticatedUserDTO {
     pub user: UserResponse,
-    pub token: String,
+    pub token: Arc<str>,
 }
 
 impl UserDTO {
     pub(crate) fn model_to_dto(user: User) -> UserDTO {
-        return UserDTO {
-            id: Some(user.id),
-            name: user.name,
-            password: user.password,
-            email: user.email,
-            avatar: user.avatar,
-            created_date: user.created_date,
-            updated_date: user.updated_date,
-            deleted_date: user.deleted_date,
-        };
+        UserDTO {
+            id: Arc::new(Some(user.id)),
+            name: Arc::from(user.name),
+            password: Arc::from(user.password),
+            email: Arc::from(user.email),
+            avatar: user.avatar.map(Arc::from),
+            created_date: Arc::new(user.created_date),
+            updated_date: Arc::new(user.updated_date),
+            deleted_date: Arc::new(user.deleted_date),
+        }
     }
 
     pub(crate) fn models_to_dto(users: Vec<User>) -> Vec<UserDTO> {
-        let mut users_dto: Vec<UserDTO> = Vec::new();
-        for user in users {
-            users_dto.push(UserDTO::model_to_dto(user));
-        }
-        return users_dto;
+        users.into_iter().map(UserDTO::model_to_dto).collect()
     }
 
     pub fn dto_to_model(&self) -> User {
-        return User {
-            id: self.id.unwrap(),
-            name: self.name.clone(),
-            password: self.password.clone(),
-            email: self.email.clone(),
-            avatar: self.avatar.clone(),
-            created_date: self.created_date,
-            updated_date: self.updated_date,
-            deleted_date: self.deleted_date,
-        };
+        User {
+            id: self.id
+                .as_ref()
+                .and_then(|id| Some(id))
+                .unwrap(),
+            name: self.name.to_string(),
+            password: self.password.to_string(),
+            email: self.email.to_string(),
+            avatar: self.avatar.as_ref().map(|arc_str| arc_str.as_ref().to_string()),
+            created_date: *self.created_date,
+            updated_date: *self.updated_date,
+            deleted_date: self.deleted_date.as_ref().and_then(|date| Some(date)),
+        }
     }
 }
 
 impl Userable for UserDTO {
-    fn get_user_id(&self) -> i32 {
-        return self.id.unwrap();
+    fn get_user_id(&self) -> Arc<i32> {
+        return Arc::from(self.id.clone().unwrap());
     }
 }

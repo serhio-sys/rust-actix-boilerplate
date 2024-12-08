@@ -35,7 +35,7 @@ pub async fn auth_middleware<B>(
             Ok(data) => {
                 let claims = data.claims;
                 if auth_service.check(claims.clone()) {
-                    match user_service.find_by_id(claims.user_id) {
+                    match user_service.find_by_id(claims.user_id.clone()) {
                         Ok(user) => {
                             req.extensions_mut().insert(user);
                             req.extensions_mut().insert(claims.clone());

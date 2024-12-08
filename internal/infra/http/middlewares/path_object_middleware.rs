@@ -33,7 +33,11 @@ pub async fn path_object_middleware<T, B>(
             )
         );
     }
-    let result = path_object_insert(service, user_id.unwrap().parse::<i32>().unwrap(), &req);
+    let result = path_object_insert(
+        service,
+        Arc::from(user_id.unwrap().parse::<i32>().unwrap()),
+        &req
+    );
     if result.is_err() {
         return Ok(
             req.into_response(HttpResponse::BadRequest().json(result.unwrap_err().to_string()))
@@ -45,7 +49,7 @@ pub async fn path_object_middleware<T, B>(
 
 pub fn path_object_insert<T>(
     service: Arc<dyn Findable<T>>,
-    user_id: i32,
+    user_id: Arc<i32>,
     req: &ServiceRequest
 ) -> Result<(), Box<dyn std::error::Error + std::marker::Send + Sync>>
     where T: Serialize + 'static

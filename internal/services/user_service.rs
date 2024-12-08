@@ -30,7 +30,7 @@ pub enum UserServiceError {
 impl Findable<UserDTO> for UserService {
     fn find_by_id(
         &self,
-        user_id: i32
+        user_id: Arc<i32>
     ) -> Result<UserDTO, Box<dyn std::error::Error + Send + Sync + 'static>> {
         return Ok(self.find_by_id(user_id)?);
     }
@@ -54,7 +54,7 @@ impl UserService {
         return Ok(UserDTO::models_to_dto(users));
     }
 
-    pub fn find_by_id(&self, user_id: i32) -> Result<UserDTO, diesel::result::Error> {
+    pub fn find_by_id(&self, user_id: Arc<i32>) -> Result<UserDTO, diesel::result::Error> {
         let user = self.user_repository.find_by_id(user_id)?;
         return Ok(UserDTO::model_to_dto(user));
     }
@@ -65,7 +65,7 @@ impl UserService {
         update_data: JsonValidator<UserUpdateRequest>
     ) -> Result<UserDTO, UserServiceError> {
         if let Some(name) = &update_data.name {
-            current_user.name = name.to_string();
+            current_user.name = Arc::from(name.to_string());
         }
         if let Some(email) = &update_data.email {
             if self.user_repository.find_by_email(&email).is_ok() {
@@ -75,7 +75,7 @@ impl UserService {
                     )
                 );
             }
-            current_user.email = email.to_string();
+            current_user.email = Arc::from(email.to_string());
         }
         let user = self.user_repository
             .update(current_user)
@@ -88,8 +88,9 @@ impl UserService {
         &self,
         user: &UserDTO
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
-        self.user_repository.delete(user.id.unwrap())?;
-        self.session_repository.delete_by_user_id(user.id.unwrap())?;
+        let user_id_ref = Arc::new(user.id.unwrap());
+        self.user_repository.delete(user_id_ref.clone())?;
+        self.session_repository.delete_by_user_id(user_id_ref)?;
         if let Some(avatar) = &user.avatar {
             self.file_system.remove_file_image(avatar)?;
         }
