@@ -2,7 +2,9 @@
 FROM rust:1.81.0 as build
 
 ENV PKG_CONFIG_ALLOW_CROSS=1
+
 WORKDIR /src/rust-app/
+
 COPY . .
 
 RUN --mount=type=cache,target=/usr/local/cargo/registry --mount=type=cache,target=/root/target \
