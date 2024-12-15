@@ -8,6 +8,4 @@ name = "config"
 path = "config.rs"
 
 [dependencies]
-lazy_static = "1.5.0"
-log = "0.4"
-dotenvy = "0.15"
+rust-commons = { git = "ssh://git@github.com/serhio-sys/rust-commons.git", branch = "main" }

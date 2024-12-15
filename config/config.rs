@@ -1,8 +1,12 @@
-use dotenvy::{ dotenv, var };
-use lazy_static::lazy_static;
+use std::sync::Arc;
 
-pub mod logger;
-pub use log;
+use rust_commons::config::database_config::DatabaseConfig;
+use rust_commons::config::{ get_var, get_var_or_default };
+use rust_commons::dotenvy::dotenv;
+use rust_commons::lazy_static::lazy_static;
+
+pub use rust_commons::log;
+pub use rust_commons::logger::init_logger;
 
 lazy_static! {
     pub static ref CONFIGURATION: Configuration = {
@@ -22,6 +26,32 @@ pub struct Configuration {
     pub jwt_secret: String,
 }
 
+impl DatabaseConfig for Configuration {
+    fn get_db_host(&self) -> std::sync::Arc<str> {
+        return Arc::from(self.database_host.clone());
+    }
+
+    fn get_db_name(&self) -> std::sync::Arc<str> {
+        return Arc::from(self.database_name.clone());
+    }
+
+    fn get_db_password(&self) -> std::sync::Arc<str> {
+        return Arc::from(self.database_password.clone());
+    }
+
+    fn get_db_user(&self) -> std::sync::Arc<str> {
+        return Arc::from(self.database_user.clone());
+    }
+
+    fn get_migrations_location(&self) -> std::sync::Arc<str> {
+        return Arc::from(self.migration_location.clone());
+    }
+
+    fn get_migrations_version(&self) -> std::sync::Arc<str> {
+        return Arc::from(self.migration_version.clone());
+    }
+}
+
 fn get_configuration() -> Configuration {
     if let Err(exc) = dotenv() {
         log::error!("Error in loading .env file - [{}]", exc.to_string());
@@ -39,26 +69,4 @@ fn get_configuration() -> Configuration {
         jwt_ttl: 72 * 3600,
         jwt_secret: get_var_or_default("JWT_SECRET", "1234567890"),
     };
-}
-
-#[allow(dead_code)]
-fn get_var_or_default(key: &str, def_value: &str) -> String {
-    let value = var(key);
-    if let Ok(unwrapped_value) = value {
-        return unwrapped_value;
-    }
-    return def_value.to_string();
-}
-
-fn get_var(key: &str) -> String {
-    let value = var(key);
-    if let Ok(unwrapped_value) = value {
-        return unwrapped_value;
-    } else {
-        panic!(
-            "Error in getting value from .env by key[{}]\n[{}]",
-            key,
-            value.unwrap_err().to_string()
-        );
-    }
 }

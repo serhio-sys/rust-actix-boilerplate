@@ -5,3 +5,4 @@ pub mod filesystem;
 pub use actix_web::{ App, HttpServer, HttpResponse, Responder, web };
 pub use actix_web::main as actix_main;
 pub use actix_web;
+pub use rust_commons::database::migration::migrate;

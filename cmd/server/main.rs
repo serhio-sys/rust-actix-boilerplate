@@ -1,14 +1,13 @@
 use core::panic;
 use std::fs;
 
-use config::{ logger::init_logger, CONFIGURATION };
-use internal::{ container::container::new, infra::{ database::migration::migrate, http::server } };
+use config::{ init_logger, Configuration, CONFIGURATION };
+use internal::{ container::container::new, infra::http::server, migrate };
 
 #[actix_web::main]
 async fn main() {
     init_logger();
-
-    if let Err(e) = migrate() {
+    if let Err(e) = migrate::<Configuration>(&CONFIGURATION) {
         panic!("{}", e.to_string());
     }
 

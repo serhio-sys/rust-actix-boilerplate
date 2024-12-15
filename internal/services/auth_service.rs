@@ -1,13 +1,12 @@
 use core::error;
 use std::{ sync::Arc, time::{ Duration, SystemTime, UNIX_EPOCH } };
 
-use base64::Engine;
 use config::CONFIGURATION;
-use pwhash::bcrypt::{ self, BcryptSetup };
 use jsonwebtoken::{ EncodingKey, Header };
 use serde::{ Deserialize, Serialize };
 use thiserror::Error;
-use uuid::Uuid;
+use rust_commons::{ base64::{ self, Engine }, pwhash, uuid::Uuid };
+use rust_commons::crypto::bcrypt::{ verify_password, hash_password };
 
 use crate::{
     filesystem::image_storage_service::ImageStorageService,
@@ -71,9 +70,7 @@ impl AuthService {
                 )
             );
         }
-        let hashed_password = hash_user_password(&user.password).map_err(
-            AuthServiceError::ArgonError
-        )?;
+        let hashed_password = hash_password(&user.password).map_err(AuthServiceError::ArgonError)?;
         user.password = hashed_password;
 
         if let Some(avatar_base64) = &user.avatar {
@@ -159,19 +156,4 @@ impl AuthService {
             .map_err(AuthServiceError::JWTError)?;
         return Ok(token);
     }
-}
-
-fn verify_password(hash: &str, password: &str) -> bool {
-    return bcrypt::verify(password, hash);
-}
-
-pub fn hash_user_password(password: &str) -> Result<String, pwhash::error::Error> {
-    return bcrypt::hash_with(
-        BcryptSetup {
-            variant: Some(bcrypt::BcryptVariant::V2b),
-            cost: Some(5),
-            ..Default::default()
-        },
-        password
-    );
 }

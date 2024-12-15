@@ -1,6 +1,7 @@
 use std::sync::{ Arc, RwLock };
 
-use diesel::{
+use rust_commons::diesel::{
+    self,
     prelude::{ Insertable, Queryable },
     query_dsl::methods::FilterDsl,
     r2d2::{ ConnectionManager, Pool, PooledConnection },
@@ -9,11 +10,11 @@ use diesel::{
     RunQueryDsl,
     Selectable,
 };
-use uuid::Uuid;
+use rust_commons::uuid::Uuid;
 
 use crate::infra::domain::session::SessionDTO;
 
-diesel::table! {
+rust_commons::diesel::table! {
     sessions (user_id, uuid) {
         user_id -> Integer,
         uuid -> Uuid,

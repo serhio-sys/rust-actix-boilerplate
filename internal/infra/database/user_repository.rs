@@ -1,7 +1,7 @@
 use std::sync::{ Arc, RwLock };
 
 use chrono::{ NaiveDateTime, Utc };
-use diesel::{
+use rust_commons::diesel::{
     prelude::{ AsChangeset, Insertable, Queryable },
     query_dsl::methods::FilterDsl,
     r2d2::{ ConnectionManager, Pool, PooledConnection },
@@ -49,8 +49,8 @@ pub(crate) struct UserInsertable {
     pub(crate) email: String,
     pub(crate) password: String,
     pub(crate) avatar: Option<String>,
-    pub(crate) created_date: NaiveDateTime,
-    pub(crate) updated_date: NaiveDateTime,
+    pub(crate) created_date: Option<NaiveDateTime>,
+    pub(crate) updated_date: Option<NaiveDateTime>,
     pub(crate) deleted_date: Option<NaiveDateTime>,
 }
 
@@ -66,8 +66,8 @@ impl UserInsertable {
             email: user_email,
             password: user_password,
             avatar: avatar,
-            created_date: Utc::now().naive_local(),
-            updated_date: Utc::now().naive_local(),
+            created_date: None,
+            updated_date: None,
             deleted_date: None,
         };
     }

@@ -10,32 +10,29 @@ path = "internal.rs"
 [dependencies]
 config = { path = "../config" }
 
-# Database libs 
-diesel = { version = "2.2.0", features = ["postgres", "chrono", "uuid", "r2d2"] }
-diesel_migrations = { version = "2.2.0" }
-chrono = { version = "0.4.38", features = ["serde"] }
-uuid = { version = "1.2", features = ["v4", "serde"] }
-
-# Validation and serialization
+# Validation
 validator = { version = "0.18.1", features = ["derive"] }
 futures = "0.3"
 mime = "0.3"
-serde_qs = { version = "0.13", features = ["actix4"] }
-serde_urlencoded = "0.7"
-serde = { version = "1.0", features = ["derive", "rc"] }
-serde_json = "1.0"
-
-base64 = "0.21"
-
-# Hashing
-pwhash = "1"
-
-rand = "0.8" 
-
-thiserror = "1.0"
 
 # Actix
-actix-web = "4"
+actix-web = "4.9.0"
 actix-cors = "0.7.0"
 actix-files = "0.6"
 jsonwebtoken = { version = "8.1" }
+
+thiserror = "2.0.7"
+
+
+# Json serialization
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_qs = { version = "0.13", features = ["actix4"] }
+serde_urlencoded = "0.7"
+serde_json = "1.0"
+
+# Diesel
+diesel = { version = "2.2.0", features = ["postgres", "chrono", "uuid", "r2d2"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+
+# Rust commons
+rust-commons = { git = "ssh://git@github.com/serhio-sys/rust-commons.git", branch = "main" }

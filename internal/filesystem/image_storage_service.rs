@@ -1,6 +1,6 @@
 use std::{ error, fs, io::{ self, Write }, path::{ Path, PathBuf } };
 
-use rand::Rng;
+use rust_commons::rand::{ self, Rng };
 
 #[derive(Clone)]
 pub struct ImageStorageService {

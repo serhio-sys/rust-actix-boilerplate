@@ -3,3 +3,4 @@
 .db.env
 .app.env
 file_storage
+.docker/.ssh/*
